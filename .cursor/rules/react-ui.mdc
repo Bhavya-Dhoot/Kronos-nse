@@ -1,0 +1,27 @@
+---
+description: React UI standards for the prediction dashboard
+globs: ["ui/src/**/*.tsx", "ui/src/**/*.ts"]
+alwaysApply: false
+---
+
+# React UI Standards
+
+## Chart library
+Use TradingView Lightweight Charts v4+ for candlestick rendering.
+Do not use Recharts for OHLCV candlesticks.
+
+## Data fetching
+Use TanStack Query for REST calls.
+Use native WebSocket with a custom hook for tick streams.
+Never use useEffect for fetch logic.
+
+## State
+Use Zustand for local app state (symbol, mode, dqg status, timeframe).
+Use TanStack Query cache for server data.
+
+## DQG status
+DQGStatus must always be visible.
+If status is FAIL or PARTIAL, hide prediction overlay and show issue details.
+
+## Error states
+Every data-dependent component must have loading/error/empty states.

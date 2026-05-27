@@ -1,0 +1,25 @@
+---
+description: Testing standards and requirements
+globs: ["tests/**/*.py"]
+alwaysApply: false
+---
+
+# Testing Standards
+
+## Coverage requirements
+- data/quality/gate.py: 100%
+- model/engine.py: 90%+
+- headless/runner.py: 85%+
+- api/routes/: 80%+
+
+## Categories
+- Unit tests: isolated with mocked DB/Redis
+- Integration tests: run against test Docker services only
+- Data quality tests: synthetic NSE edge-case datasets
+- Backtests: offline only, never live API
+
+## Fixtures
+Use tests/conftest.py for shared fixtures and synthetic dataset helpers.
+
+## Before every PR
+Run: pytest tests/unit/ tests/data_quality/ -v --tb=short

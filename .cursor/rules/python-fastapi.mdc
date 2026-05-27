@@ -1,0 +1,30 @@
+---
+description: Python and FastAPI coding standards
+globs: ["**/*.py"]
+alwaysApply: false
+---
+
+# Python / FastAPI Standards
+
+## Async patterns
+- Use async def for all database calls, HTTP calls, and WebSocket handlers
+- Use asyncpg connection pools — never create new connections per request
+- Background tasks use asyncio.create_task() or threading.Thread(daemon=True) with rationale
+
+## FastAPI specifics
+- All routes use Pydantic response_model=
+- Use HTTPException with specific status codes
+- Dependency injection for db pool, redis client, kronos engine, and dqg instance
+- Router prefix structure: /api/v1/{resource}
+- WebSocket endpoints in /ws/{channel}
+
+## Error handling hierarchy
+1. Catch specific exceptions first (asyncpg.PostgresError, redis.RedisError)
+2. Log with context in structured form
+3. Never swallow exceptions silently
+4. DQG failures raise DQGFailureError — never silently return empty predictions
+
+## Performance
+- Use asyncpg executemany() for bulk inserts, never loop execute()
+- Use TimescaleDB continuous aggregates for resampled reads
+- Log Redis cache hit/miss at DEBUG level

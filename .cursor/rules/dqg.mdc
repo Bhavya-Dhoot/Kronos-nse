@@ -1,0 +1,28 @@
+---
+description: Data Quality Gate rules — the most important file in the project
+globs: ["data/quality/**/*.py", "model/engine.py", "headless/runner.py"]
+alwaysApply: false
+---
+
+# Data Quality Gate (DQG) Rules
+
+## Hard invariants
+1. KronosEngine.predict() MUST call dqg.run() before model inference
+2. If dqg.status != DQGStatus.PASS, raise DQGFailureError and stop
+3. HeadlessRunner._on_candle_close() MUST skip symbols that fail DQG with logging
+4. API layer MUST return HTTP 422 with DQG report if DQG fails
+5. DQG report MUST be stored in Redis for UI consumption
+
+## Check criticality
+- min_history: CRITICAL
+- coverage: CRITICAL
+- no_critical_gaps: CRITICAL
+- ohlcv_valid: CRITICAL
+- lookback_ok: CRITICAL
+- no_outliers: WARNING
+- staleness: CRITICAL in HEADLESS/VISUAL; skip in BACKTEST/TRAIN
+
+## When modifying DQG checks
+- Add a unit test in tests/data_quality/ for every new check
+- Thresholds go in config/base.yaml, never hardcoded
+- CRITICAL check changes require UI DQGStatus updates

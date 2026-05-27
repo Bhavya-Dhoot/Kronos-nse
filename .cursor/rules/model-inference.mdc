@@ -1,0 +1,28 @@
+---
+description: Rules for model inference, context building, and predictions
+globs: ["model/**/*.py"]
+alwaysApply: false
+---
+
+# Model Inference Rules
+
+## Latency budget
+Total budget: 500ms candle-close to signal emission
+- DB context fetch: < 20ms
+- DQG: < 10ms
+- GPU inference (batch 10): < 200ms
+- Post-process: < 10ms
+- Redis publish: < 5ms
+
+## Prediction validation
+After each prediction, enforce OHLCV invariants and non-negative volume.
+If constraints fail: log, clip to enforce validity, and flag metadata.
+Never return NaN predictions; raise PredictionError.
+
+## Model hot-swap
+KronosEngine must support live model reload via _load_model() under lock,
+ensuring old references are only released after full load.
+
+## Sampling
+Default sample_count=10 and temperature=0.7 must remain config-driven.
+Never hardcode sampling parameters in inference code.

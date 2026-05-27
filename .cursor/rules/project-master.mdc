@@ -1,0 +1,37 @@
+---
+description: Master rules for Kronos NSE project
+globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.yaml", "**/*.json"]
+alwaysApply: true
+---
+
+# Kronos NSE — Project Rules
+
+## Identity
+You are working on a financial market prediction system using the Kronos-small
+foundation model fine-tuned on NSE (National Stock Exchange India) OHLCV data.
+The system uses: Python 3.11, FastAPI, TimescaleDB, Redis, React, Angel One Smart API.
+
+## Non-negotiable constraints
+- The Data Quality Gate (DQG) is a hard blocker. Never write code that bypasses it.
+- Never write code that calls the model if dqg.status != DQGStatus.PASS
+- Never hardcode API credentials. All secrets go in .env via python-dotenv.
+- Every database query must use parameterized statements — no f-string SQL.
+- All financial timestamps are in Asia/Kolkata (IST) timezone. Never use UTC internally without explicit conversion.
+- OHLCV constraints must be validated post-prediction: H >= O, H >= C, L <= O, L <= C
+- Never commit: .env files, checkpoint weights, Angel One credentials, any file matching *.pkl > 100MB.
+
+## Code style
+- Python: type hints on every function signature, Pydantic models for all API request/response schemas, async/await for all I/O operations
+- No raw dicts where a dataclass or Pydantic model would be clearer
+- Logging: use Python's logging module, never print() in production code
+- Error handling: always catch specific exceptions, never bare except:
+
+## Documentation
+- Every class needs a one-line docstring
+- Every non-trivial function needs a docstring explaining what it does, not how
+- Add inline comments for NSE-specific logic when needed for maintainability
+
+## When to use context7
+Always use context7 when writing code involving: asyncpg, TimescaleDB SQL,
+FastAPI WebSockets, torch.compile(), KronosPredictor API, lightweight-charts,
+TanStack Query. These APIs change frequently.
