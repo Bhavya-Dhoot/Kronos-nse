@@ -1,0 +1,164 @@
+app:
+  name: "kronos-nse"
+  mode: "${APP_MODE:COLLECT}"  # COLLECT/BACKTEST/VISUAL/HEADLESS/TRAIN/PAPER
+
+api:
+  host: "${API_HOST:0.0.0.0}"
+  port: ${API_PORT:8000}
+  log_level: "${LOG_LEVEL:INFO}"
+  secret_key: "${SECRET_KEY:changeme}"
+
+database:
+  url: "${DATABASE_URL:postgresql://postgres:kronos@localhost:5432/kronos_nse}"
+  test_url: "${DATABASE_TEST_URL:postgresql://postgres:kronos@localhost:5433/kronos_nse_test}"
+  min_pool_size: 5
+  max_pool_size: 20
+  statement_timeout_ms: 5000
+
+timescale:
+  hypertable: "candles"
+  chunk_time_interval: "7 days"
+  compression_after: "7 days"
+
+redis:
+  url: "${REDIS_URL:redis://localhost:6379}"
+  dqg_status_channel: "kronos:dqg:status"
+  prediction_channel: "kronos:predictions"
+  cache_ttl_seconds: 300
+
+model:
+  name: "NeoQuasar/Kronos-small"
+  tokenizer_name: "NeoQuasar/Kronos-Tokenizer-base"
+  device: "cuda"
+  dtype: "bf16"
+  checkpoint_dir: "./checkpoints"
+  lookback: 225
+  default_pred_len: 12
+  max_sequence_length: 512
+  default_sample_count: 2
+  default_temperature: 0.7
+
+registry:
+  table_name: "model_registry"
+  auto_promote_threshold_pct: 2.0
+
+training:
+  batch_size: 50
+  learning_rate: 0.0002
+  weight_decay: 0.1
+  max_epochs: 30
+  gradient_accumulation_steps: 1
+  bf16_mixed_precision: true
+  optimizer: "adamw"
+  lookback: 225
+  pred_len: 12
+  timeframe: "5min"
+  eval_every_n_epochs: 2
+  patience: 5
+  min_new_samples: 10000
+  promotion_threshold_pct: 2.0
+  auto_promote: true
+  train_val_test_split: [0.8, 0.1, 0.1]
+  tokenizer_save_every_epochs: 5
+  tokenizer_wip_dir: "${CHECKPOINT_DIR:./checkpoints}/tokenizer_wip"
+  predictor_wip_dir: "${CHECKPOINT_DIR:./checkpoints}/predictor_wip"
+  universe: "NIFTY50_TRAIN"
+
+drift:
+  window_days: 7
+  baseline_days: 30
+  min_samples: 100
+  mae_degradation_threshold: 0.15
+  directional_acc_threshold: 0.52
+  ks_threshold: 0.1
+  emergency_retrain_enabled: true
+
+data:
+  timezone: "Asia/Kolkata"
+  market_open: "09:15"
+  market_close: "15:30"
+  forward_fill_max_bars: 2
+  universe: "NIFTY50"
+
+collector:
+  universe: "NIFTY50"
+  timeframes: ["5min", "15min", "1day"]
+  fetch_concurrency: 1          # keep at 1 to respect getCandleData 3 req/s globally
+  live_candle_timeframe: "5min"
+  incremental_interval_minutes: 5
+
+dqg:
+  min_history_days_train: 90
+  min_history_bars_infer: 10
+  min_coverage_pct: 98.0
+  max_gap_minutes: 10
+  min_lookback_bars: 225
+  max_staleness_seconds_live: 900
+
+latency:
+  total_budget_ms: 500
+  db_fetch_ms: 20
+  dqg_ms: 10
+  inference_ms: 200
+  emit_ms: 5
+
+headless:
+  signal_redis_channel: "kronos:signals"
+  webhook_url: "${HEADLESS_WEBHOOK_URL:}"
+  emit_targets: ["redis", "csv"]
+  csv_output_path: "./data/signals.csv"
+  watchdog_timeout: 120
+
+backtest:
+  universe: "NIFTY50"
+  timeframe: "5min"
+  start_date: "2024-01-01"
+  end_date: "2024-06-01"
+  max_symbols: 5
+
+ui:
+  websocket_url: "${UI_WS_URL:ws://localhost:8000/ws/live}"
+  api_base_url: "${UI_API_URL:http://localhost:8000/api/v1}"
+
+scheduler:
+  retrain_cron: "0 3 * * SUN"
+  health_check_interval_seconds: 60
+
+variance:
+  enabled: true
+
+  cache_ttl_seconds: 60
+
+  poll_interval_seconds:
+    vix: 60
+    options: 300
+    fii_dii: 1800
+    oi: 300
+    gift_nifty: 300
+    global_markets: 300
+    macro: 300
+
+  weights:
+    vix: 0.25
+    options: 0.20
+    institutional: 0.25
+    gift_nifty: 0.15
+    global_macro: 0.15
+
+  modification:
+    temperature_base: 0.015
+    vix_baseline: 15
+    temperature_cap: 0.3
+    band_width_per_vix_point: 0.008
+    signal_base_threshold: 0.005
+    signal_threshold_per_vix_point: 0.0002
+    confidence_panic: "LOW"
+    confidence_fear: "LOW"
+
+  gift_nifty:
+    primary_url: "https://groww.in/markets/gift-nifty"
+    fallback_url: "https://niftytrader.in/gift-nifty"
+
+  mve_history:
+    retention_days: 30
+
