@@ -177,6 +177,9 @@ variance:
       GC=F: 0.15
       ^TNX: 0.20
 
+  engine:
+    global_combined_weight: 0.30
+
   mve_history:
     retention_days: 30
 
