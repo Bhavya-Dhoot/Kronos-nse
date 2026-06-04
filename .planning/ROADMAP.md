@@ -100,7 +100,7 @@ Success criteria:
 **Plans:** 2 plans (2 waves)
 ```
 Plans:
-- [ ] 04-01-PLAN.md — AngelOneClient extension + browser singleton + GIFTNiftyCollector — Wave 1
+- [x] 04-01-PLAN.md — AngelOneClient extension + browser singleton + GIFTNiftyCollector — Wave 1
 - [ ] 04-02-PLAN.md — Tests for GIFTNiftyCollector — Wave 2
 ```
 Wave 2 *(blocked on Wave 1 completion)*:
