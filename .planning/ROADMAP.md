@@ -147,11 +147,11 @@ Success criteria:
 ```
 Plans:
 - [x] 06-01-PLAN.md — GlobalDimensionAggregator — Wave 1 ✓
-- [ ] 06-02-PLAN.md — MarketVarianceEngine (core) — Wave 2
+- [x] 06-02-PLAN.md — MarketVarianceEngine (core) — Wave 2 ✓
 - [ ] 06-03-PLAN.md — FastAPI lifespan + --standalone-mve integration — Wave 3
 - [ ] 06-04-PLAN.md — Aggregator + Engine tests — Wave 3
 ```
-Wave 2 *(blocked on Wave 1 completion)*: Engine imports GlobalDimensionAggregator.
+Wave 2 ✅ *(completed 2026-06-04)*: Engine imports GlobalDimensionAggregator.
 Wave 3 *(blocked on Wave 2 completion)*: Integration and tests both need engine to exist; no file conflicts between them.
 Cross-cutting constraints: Engine subclasses use BaseVarianceCollector from Phase 1. Aggregators follow InstitutionalDimensionAggregator pattern from Phase 3. Tests follow Phase 1-5 patterns (AsyncMock, fixtures, parametrize). Engine accesses RedisCache publish_mvs/set_mve methods from existing data/storage/redis_cache.py.
 

@@ -6,16 +6,16 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 6 — MVE Orchestrator (Plan 01 ✅ 2026-06-04)
+**Current focus:** Phase 6 — MVE Orchestrator (Plan 02 ✅ 2026-06-04)
 
 ## Current Phase
 
 **Phase 6: MVE Orchestrator**
 - Requirements: ENG-01/02/03/04/05/06/07
-- Status: In Progress
-- Plans: 4 plans (06-01, 06-02, 06-03, 06-04) — Wave 1 done, Waves 2-3 pending
-- Last Activity: 2026-06-04 (GlobalDimensionAggregator done)
-- Key Deliverables: GlobalDimensionAggregator (GIFT Nifty 0.5 + Global Markets 0.5, combined weight 0.30)
+- Status: In Progress (ENG-01/02/03/04/07 ✅, 06 pending)
+- Plans: 4 plans (06-01, 06-02, 06-03, 06-04) — Waves 1-2 done, Wave 3 pending
+- Last Activity: 2026-06-04 (MarketVarianceEngine done — 513 lines)
+- Key Deliverables: MarketVarianceEngine with lifecycle, market state machine (PRE_MARKET/MARKET_HOURS/POST_MARKET/GLOBAL_ONLY), collector management, MVS recompute pipeline, Redis publish, Prometheus 4-metric instrumentation
 
 ## Previous Phase
 
@@ -35,7 +35,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | 3. Institutional Flow | Complete | FII-01–02, OIC-01–03 |
 | 4. GIFT Nifty | Complete | GFT-01–05 |
 | 5. Global & Macro | Complete | GLB-01–03, MAC-01–02 |
-| 6. Orchestrator | Pending | ENG-01–07 |
+| 6. Orchestrator | In Progress | ENG-01–07 (ENG-01/02/03/04/07 ✅) |
 | 7. PredictionModifier | Pending | MOD-01–08 |
 | 8. API & UI | Pending | API-01–04, UI-01–05 |
 | 9. DQG & System Test | Pending | DQG-01–05 |
@@ -68,5 +68,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | GlobalDimensionAggregator follows Institutional pattern | D-04: uniform aggregator interface | Done — 06-01 |
 | Global internal weights: GIFT 0.5, Global 0.5 | D-05: equal split | Done — 06-01 |
 | Combined MVS weight 0.30 | D-06: sum of gift_nifty 0.15 + global_macro 0.15 | Done — 06-01 |
+| Market state by IST time ranges, CLOSED reserved | D-02: 4 timed states, holiday handling via D-03 | Done — 06-02 |
+| 1% MVS change threshold before Redis publish | D-09: prevents redundant updates, formula abs(new-last)/max(abs(last),0.01) > 0.01 | Done — 06-02 |
+| GlobalMarkets+Macro pre-combined before aggregator | Simple average before passing as global_score to GlobalDimensionAggregator | Done — 06-02 |
+| Ready gate: 3 of 6 sub-dimensions | D-11/D-12: any 3 suffices (vix, options, fii_dii, gift_nifty, global_markets, macro) | Done — 06-02 |
+| Prometheus: 4 gauges with collector labels | ENG-07/D-19: mve_composite_score, mve_vix_value, mve_collector_up, mve_mvs_age_seconds | Done — 06-02 |
 
-*Last updated: 2026-06-04 after Plan 06-01 execution*
+*Last updated: 2026-06-04 after Plan 06-02 execution*
