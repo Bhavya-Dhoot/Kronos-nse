@@ -8,6 +8,7 @@ from variance.collectors.fii_dii_collector import FIIDIICollector
 from variance.collectors.oi_collector import OICollector
 from variance.collectors.gift_nifty_collector import GIFTNiftyCollector
 from variance.collectors.global_markets_collector import GlobalMarketsCollector
+from variance.collectors.macro_collector import MacroCollector
 
 __all__ = [
     "VIXCollector",
@@ -16,4 +17,5 @@ __all__ = [
     "OICollector",
     "GIFTNiftyCollector",
     "GlobalMarketsCollector",
+    "MacroCollector",
 ]

@@ -170,6 +170,13 @@ variance:
       ^KS11: 0.05
       DX-Y.NYB: -0.10
 
+  macro:
+    tickers:
+      USDINR=X: 0.35
+      CL=F: 0.30
+      GC=F: 0.15
+      ^TNX: 0.20
+
   mve_history:
     retention_days: 30
 
