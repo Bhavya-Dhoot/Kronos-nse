@@ -121,7 +121,7 @@ Success criteria:
 **Plans:** 3 plans (3 waves)
 ```
 Plans:
-- [ ] 05-01-PLAN.md — GlobalMarketsCollector + config + registration — Wave 1
+- [x] 05-01-PLAN.md — GlobalMarketsCollector + config + registration — Wave 1
 - [ ] 05-02-PLAN.md — MacroCollector + config + registration — Wave 2
 - [ ] 05-03-PLAN.md — Tests for both collectors — Wave 3
 ```

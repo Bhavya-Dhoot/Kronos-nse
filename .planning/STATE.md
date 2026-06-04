@@ -12,9 +12,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Phase 5: Global & Macro**
 - Requirements: GLB-01/02/03, MAC-01/02
-- Status: Planning
+- Status: In Progress
 - Plans: 3 plans (05-01, 05-02, 05-03) — 3 waves
-- Last Activity: 2026-06-04 (plans created)
+- Last Activity: 2026-06-04 (05-01 executed — GlobalMarketsCollector built)
+- Plan 05-01 Completed: GlobalMarketsCollector with 8 tickers via yfinance ✓
 
 ## Previous Phase
 
@@ -66,4 +67,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Per-collector circuit breakers | Prevents cascading failures | — Pending |
 
 ---
-*Last updated: 2026-06-04 after Plan 04-01 execution*
+| yfinance for global/macro | Free, well-tested, sufficient freq | Done — 05-01 |
+| NseIndiaApi for NSE data | Manages NSE cookies/sessions | — Pending |
+| Per-collector circuit breakers | Prevents cascading failures | — Pending |
+
+*Last updated: 2026-06-04 after Plan 05-01 execution*
