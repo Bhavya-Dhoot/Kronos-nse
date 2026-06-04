@@ -146,7 +146,7 @@ Success criteria:
 **Plans:** 4 plans (3 waves)
 ```
 Plans:
-- [ ] 06-01-PLAN.md — GlobalDimensionAggregator — Wave 1
+- [x] 06-01-PLAN.md — GlobalDimensionAggregator — Wave 1 ✓
 - [ ] 06-02-PLAN.md — MarketVarianceEngine (core) — Wave 2
 - [ ] 06-03-PLAN.md — FastAPI lifespan + --standalone-mve integration — Wave 3
 - [ ] 06-04-PLAN.md — Aggregator + Engine tests — Wave 3

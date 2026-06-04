@@ -70,8 +70,8 @@
 - [ ] **ENG-02**: `_recompute_mvs()` publishes to Redis + pub/sub after any dimension update
 - [ ] **ENG-03**: Market-hours aware scheduling (CLOSED pauses all, PRE_MARKET polls GIFT+global, MARKET_HOURS polls all, etc.)
 - [ ] **ENG-04**: Startup: immediate poll of all collectors, wait for 3 dimensions, degraded mode after 30s
-- [ ] **ENG-05**: `GlobalDimensionAggregator` combines GIFT Nifty (0.5) + Global Markets (0.5)
-- [ ] **ENG-06**: `InstitutionalDimensionAggregator` combines FII/DII (0.7) + OI (0.3)
+- [x] **ENG-05**: `GlobalDimensionAggregator` combines GIFT Nifty (0.5) + Global Markets (0.5)
+- [x] **ENG-06**: `InstitutionalDimensionAggregator` combines FII/DII (0.7) + OI (0.3)
 - [ ] **ENG-07**: Prometheus metrics: mve_composite_score, mve_vix_value, mve_collector_up, mve_mvs_age_seconds
 
 ### PredictionModifier
@@ -140,7 +140,7 @@
 | GFT-01, GFT-02, GFT-03, GFT-04, GFT-05 | Phase 4 | Pending |
 | GLB-01, GLB-02, GLB-03 | Phase 5 | Pending |
 | MAC-01, MAC-02 | Phase 5 | Complete ✅ |
-| ENG-01, ENG-02, ENG-03, ENG-04, ENG-05, ENG-06, ENG-07 | Phase 6 | Pending |
+| ENG-01, ENG-02, ENG-03, ENG-04, ENG-05, ENG-06, ENG-07 | Phase 6 | In Progress (ENG-05/06 ✅) |
 | MOD-01, MOD-02, MOD-03, MOD-04, MOD-05, MOD-06, MOD-07, MOD-08 | Phase 7 | Pending |
 | API-01, API-02, API-03, API-04 | Phase 8 | Pending |
 | UI-01, UI-02, UI-03, UI-04, UI-05 | Phase 8 | Pending |
