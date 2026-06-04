@@ -6,16 +6,16 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 2 — VIX & Options Sentiment (Completed 2026-06-04)
+**Current focus:** Phase 3 — Institutional Flow (Planned 2026-06-04)
 
 ## Current Phase
 
-**Phase 2: VIX & Options Sentiment**
-- Requirements: VIX-01/02/03, OPT-01/02/03/04/05/06
-- Status: Complete
-- Plans: 2 plans (02-01, 02-02) — all executed
-- Last Activity: 2026-06-04 (both plans committed)
-- Tests: 27 passing (13 VIX + 14 Options)
+**Phase 3: Institutional Flow**
+- Requirements: FII-01/02, OIC-01/02/03
+- Status: Ready to execute
+- Plans: 3 plans (03-01, 03-02, 03-03) — 2 waves
+- Last Activity: 2026-06-04 (plans created)
+- Tests: Planned — FIIDII (5+), Aggregator (8+), OI (10+)
 
 ## Progress
 
@@ -23,7 +23,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 |-------|--------|-------------|
 | 1. Scaffold & Score | Complete | SCF-01–04, BASE-01–04 |
 | 2. VIX & Options | Complete | VIX-01–03, OPT-01–06 |
-| 3. Institutional Flow | Pending | FII-01–02, OIC-01–03 |
+| 3. Institutional Flow | Ready to execute | FII-01–02, OIC-01–03 |
 | 4. GIFT Nifty | Pending | GFT-01–05 |
 | 5. Global & Macro | Pending | GLB-01–03, MAC-01–02 |
 | 6. Orchestrator | Pending | ENG-01–07 |

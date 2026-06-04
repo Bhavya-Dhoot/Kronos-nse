@@ -72,6 +72,17 @@ Success criteria:
 5. InstitutionalDimensionAggregator combines FII/DII (0.7) + OI (0.3)
 6. All 7 tests pass
 
+**Plans:** 3 plans (2 waves)
+```
+Plans:
+- [ ] 03-01-PLAN.md — Angel singleton + FIIDIICollector + tests — Wave 1
+- [ ] 03-02-PLAN.md — InstitutionalDimensionAggregator + tests — Wave 1
+- [ ] 03-03-PLAN.md — OICollector + OI tests — Wave 2
+```
+
+Wave 2 *(blocked on Wave 1 completion)*:
+Cross-cutting constraints: OICollector depends on _angel.py singleton (Plan 03). All collectors share _nse.py singleton from Phase 2. Each collector subclasses BaseVarianceCollector. Aggregator is standalone (no collector deps). Tests follow Phase 2 patterns (AsyncMock, parametrize, fixtures).
+
 **Phase 4: GIFT Nifty**
 Goal: Build GIFTNiftyCollector using Scrapling + Playwright with Groww primary and NiftyTrader fallback.
 Requirements: GFT-01, GFT-02, GFT-03, GFT-04, GFT-05
