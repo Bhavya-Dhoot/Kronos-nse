@@ -34,10 +34,10 @@ Success criteria:
 **Plans:** 4 plans (3 waves)
 ```
 Plans:
-- [ ] 01-01-PLAN.md — Foundation scaffold (dir tree, deps, config) — Wave 1
-- [ ] 01-02-PLAN.md — Data contracts (schema, score dataclass, Redis) — Wave 2
-- [ ] 01-03-PLAN.md — BaseVarianceCollector abstract class — Wave 2
-- [ ] 01-04-PLAN.md — Tests (collector + scoring math, 15 tests) — Wave 3
+- [x] 01-01-PLAN.md — Foundation scaffold (dir tree, deps, config) — Wave 1 ✓
+- [x] 01-02-PLAN.md — Data contracts (schema, score dataclass, Redis) — Wave 2 ✓
+- [x] 01-03-PLAN.md — BaseVarianceCollector abstract class — Wave 2 ✓
+- [x] 01-04-PLAN.md — Tests (collector + scoring math, 24 tests) — Wave 3 ✓
 ```
 
 **Phase 2: VIX & Options Sentiment**

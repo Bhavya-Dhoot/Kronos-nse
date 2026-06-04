@@ -6,21 +6,22 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 1 — Scaffold & Score Foundation
+**Current focus:** Phase 1 — Scaffold & Score Foundation (Completed 2026-06-04)
 
 ## Current Phase
 
 **Phase 1: Scaffold & Score Foundation**
 - Requirements: SCF-01/02/03/04, BASE-01/02/03/04
-- Status: Ready to execute
-- Plans: 4 plans (01-01 through 01-04), 3 waves
-- Last Activity: 2026-06-04 (plan created)
+- Status: Complete
+- Plans: 4 plans (01-01 through 01-04), 3 waves — all executed
+- Last Activity: 2026-06-04 (all 4 plans committed)
+- Tests: 24/24 passing (9 collector + 15 scoring)
 
 ## Progress
 
 | Phase | Status | Requirements |
 |-------|--------|-------------|
-| 1. Scaffold & Score | Pending | SCF-01–04, BASE-01–04 |
+| 1. Scaffold & Score | Complete | SCF-01–04, BASE-01–04 |
 | 2. VIX & Options | Pending | VIX-01–03, OPT-01–06 |
 | 3. Institutional Flow | Pending | FII-01–02, OIC-01–03 |
 | 4. GIFT Nifty | Pending | GFT-01–05 |
