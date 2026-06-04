@@ -54,8 +54,8 @@ Success criteria:
 **Plans:** 2 plans (2 waves)
 ```
 Plans:
-- [ ] 02-01-PLAN.md — NseIndiaApi singleton + VIXCollector + tests — Wave 1
-- [ ] 02-02-PLAN.md — OptionsCollector + tests — Wave 2
+- [x] 02-01-PLAN.md — NseIndiaApi singleton + VIXCollector + tests — Wave 1 ✓
+- [x] 02-02-PLAN.md — OptionsCollector + tests — Wave 2 ✓
 ```
 
 Wave 2 *(blocked on Wave 1 completion)*:
