@@ -14,8 +14,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 - Requirements: GLB-01/02/03, MAC-01/02
 - Status: In Progress
 - Plans: 3 plans (05-01, 05-02, 05-03) — 3 waves
-- Last Activity: 2026-06-04 (05-01 executed — GlobalMarketsCollector built)
+- Last Activity: 2026-06-04 (05-02 executed — MacroCollector built)
 - Plan 05-01 Completed: GlobalMarketsCollector with 8 tickers via yfinance ✓
+- Plan 05-02 Completed: MacroCollector with 4 macro tickers, all-inverse scoring ✓
 
 ## Previous Phase
 
@@ -62,7 +63,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Groww primary + NiftyTrader fallback | Dual-source reliability per D-08/D-09 | Done — 21 tests pass |
 | Playwright browser singleton in _browser.py | Lazy async singleton matching _nse.py pattern | Done — 21 tests pass |
 | get_previous_close() on AngelOneClient | Daily candle close via Angel Smart API for gap computation | Done — 21 tests pass |
-| yfinance for global/macro | Free, well-tested, sufficient freq | — Pending |
+| yfinance for global/macro | Free, well-tested, sufficient freq | Done — 05-01/05-02 |
 | NseIndiaApi for NSE data | Manages NSE cookies/sessions | — Pending |
 | Per-collector circuit breakers | Prevents cascading failures | — Pending |
 
@@ -71,4 +72,4 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | NseIndiaApi for NSE data | Manages NSE cookies/sessions | — Pending |
 | Per-collector circuit breakers | Prevents cascading failures | — Pending |
 
-*Last updated: 2026-06-04 after Plan 05-01 execution*
+*Last updated: 2026-06-04 after Plan 05-02 execution*

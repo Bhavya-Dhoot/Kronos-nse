@@ -61,8 +61,8 @@
 
 ### Macro Collector
 
-- [ ] **MAC-01**: `MacroCollector` polls USD/INR, Brent crude, Gold, US 10Y every 5min via yfinance
-- [ ] **MAC-02**: Weighted scoring: USD/INR 35%, Crude 30%, Gold 15%, US10Y 20% (all inverse — rising = bearish for India)
+- [x] **MAC-01**: `MacroCollector` polls USD/INR, Brent crude, Gold, US 10Y every 5min via yfinance
+- [x] **MAC-02**: Weighted scoring: USD/INR 35%, Crude 30%, Gold 15%, US10Y 20% (all inverse — rising = bearish for India)
 
 ### MVE Orchestrator
 
@@ -139,7 +139,7 @@
 | OIC-01, OIC-02, OIC-03 | Phase 3 | Complete ✅ |
 | GFT-01, GFT-02, GFT-03, GFT-04, GFT-05 | Phase 4 | Pending |
 | GLB-01, GLB-02, GLB-03 | Phase 5 | Pending |
-| MAC-01, MAC-02 | Phase 5 | Pending |
+| MAC-01, MAC-02 | Phase 5 | Complete ✅ |
 | ENG-01, ENG-02, ENG-03, ENG-04, ENG-05, ENG-06, ENG-07 | Phase 6 | Pending |
 | MOD-01, MOD-02, MOD-03, MOD-04, MOD-05, MOD-06, MOD-07, MOD-08 | Phase 7 | Pending |
 | API-01, API-02, API-03, API-04 | Phase 8 | Pending |

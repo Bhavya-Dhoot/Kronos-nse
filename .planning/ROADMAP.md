@@ -122,7 +122,7 @@ Success criteria:
 ```
 Plans:
 - [x] 05-01-PLAN.md — GlobalMarketsCollector + config + registration — Wave 1
-- [ ] 05-02-PLAN.md — MacroCollector + config + registration — Wave 2
+- [x] 05-02-PLAN.md — MacroCollector + config + registration — Wave 2
 - [ ] 05-03-PLAN.md — Tests for both collectors — Wave 3
 ```
 Wave 2 *(blocked on Wave 1 completion)*: Both plans modify __init__.py and config/base.yaml.
