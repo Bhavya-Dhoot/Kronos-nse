@@ -51,6 +51,16 @@ Success criteria:
 5. Options score adjusts for max-pain distance from spot
 6. All 8 tests pass
 
+**Plans:** 2 plans (2 waves)
+```
+Plans:
+- [ ] 02-01-PLAN.md — NseIndiaApi singleton + VIXCollector + tests — Wave 1
+- [ ] 02-02-PLAN.md — OptionsCollector + tests — Wave 2
+```
+
+Wave 2 *(blocked on Wave 1 completion)*:
+Cross-cutting constraints: Both collectors share NseIndiaApi singleton via `_nse.py`. Each collector subclasses `BaseVarianceCollector`. Tests follow Phase 1 patterns (AsyncMock, parametrize, fixtures).
+
 **Phase 3: Institutional Flow**
 Goal: Build FII/DII net flows collector (30min) + futures OI change tracker (5min) + InstitutionalDimensionAggregator.
 Requirements: FII-01, FII-02, OIC-01, OIC-02, OIC-03
