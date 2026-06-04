@@ -70,15 +70,18 @@ Success criteria:
 3. OICollector tracks OI change vs previous poll via Redis
 4. OI buildup/unwind scoring matches expected thresholds
 5. InstitutionalDimensionAggregator combines FII/DII (0.7) + OI (0.3)
-6. All 7 tests pass
+6. All 64 tests pass
 
 **Plans:** 3 plans (2 waves)
 ```
 Plans:
-- [ ] 03-01-PLAN.md — Angel singleton + FIIDIICollector + tests — Wave 1
+- [x] 03-01-PLAN.md — Angel singleton + FIIDIICollector + tests — Wave 1 ✓
 - [x] 03-02-PLAN.md — InstitutionalDimensionAggregator + tests — Wave 1 ✓
 - [x] 03-03-PLAN.md — OICollector + OI tests — Wave 2 ✓
 ```
+
+Wave 2 *(blocked on Wave 1 completion)*: OICollector depends on AngelOneClient singleton in _angel.py.
+Cross-cutting constraints: Both FIIDIICollector and OICollector subclass BaseVarianceCollector. FIIDIICollector uses NseIndiaApi singleton from _nse.py. OICollector uses AngelOneClient singleton from _angel.py. Aggregator has no external dependencies. Tests follow established patterns (AsyncMock, parametrize, fixtures).
 
 Wave 2 *(blocked on Wave 1 completion)*:
 Cross-cutting constraints: OICollector depends on _angel.py singleton (Plan 03). All collectors share _nse.py singleton from Phase 2. Each collector subclasses BaseVarianceCollector. Aggregator is standalone (no collector deps). Tests follow Phase 2 patterns (AsyncMock, parametrize, fixtures).
@@ -93,6 +96,15 @@ Success criteria:
 4. Gap vs previous Nifty close computed correctly
 5. Score: 1% gap→0.5, -2% gap→-1.0
 6. All 6 tests pass
+
+**Plans:** 2 plans (2 waves)
+```
+Plans:
+- [ ] 04-01-PLAN.md — AngelOneClient extension + browser singleton + GIFTNiftyCollector — Wave 1
+- [ ] 04-02-PLAN.md — Tests for GIFTNiftyCollector — Wave 2
+```
+Wave 2 *(blocked on Wave 1 completion)*:
+Cross-cutting constraints: GIFTNiftyCollector subclasses BaseVarianceCollector. Browser singleton lives in _browser.py following _nse.py/ _angel.py lazy-init pattern. get_previous_close() added to AngelOneClient per D-01/D-05. Tests mock both browser and AngelOneClient (no live services). Scoring follows D-06: max(-1.0, min(1.0, gap_pct * 50)).
 
 **Phase 5: Global & Macro**
 Goal: Build GlobalMarketsCollector and MacroCollector using yfinance with weighted scoring logic.
