@@ -437,3 +437,28 @@ class AngelOneClient:
     def _build_futures_symbol(self, symbol: str) -> str:
         """Build the Angel One futures trading symbol."""
         return f"{symbol}FUT"
+
+    def get_previous_close(
+        self,
+        symbol_token: str = "99926000",
+        exchange: str = "NSE",
+    ) -> float | None:
+        """Fetch the last completed daily candle's close price.
+
+        Per D-01: calls getCandleData with ONE_DAY interval for yesterday.
+        Per D-03: default token for NIFTY 50 = "99926000", exchange = "NSE".
+        Per D-05: returns None on error (never raises).
+        """
+        now = datetime.now(timezone.utc)
+        # Yesterday's date in IST
+        yesterday = now - timedelta(days=1)
+        from_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+        to_date = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
+
+        data = self.get_historical(symbol_token, exchange, "1day", from_date, to_date)
+        if not data:
+            return None
+        try:
+            return float(data[-1][4])  # last row, close column
+        except (IndexError, TypeError, ValueError):
+            return None
