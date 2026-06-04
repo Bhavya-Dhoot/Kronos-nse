@@ -48,3 +48,21 @@ async def _fetch_option_chain(symbol: str = "NIFTY") -> dict[str, Any]:
     """
     api = _get_nse_api()
     return await asyncio.to_thread(api.get_option_chain, symbol)
+
+
+async def _fetch_fii_dii_data() -> dict[str, Any]:
+    """Fetch FII/DII net flow data via asyncio.to_thread wrapper.
+
+    Tries common method names on the NseIndiaApi object:
+      get_fii_dii_data, get_fii_dii_net_flows, get_fii_dii
+    Raises NotImplementedError if none are found.
+    """
+    api = _get_nse_api()
+    for method_name in ("get_fii_dii_data", "get_fii_dii_net_flows", "get_fii_dii"):
+        method = getattr(api, method_name, None)
+        if method is not None:
+            return await asyncio.to_thread(method)
+    raise NotImplementedError(
+        "No FII/DII method found on NseIndiaApi — expected one of: "
+        "get_fii_dii_data, get_fii_dii_net_flows, get_fii_dii"
+    )
