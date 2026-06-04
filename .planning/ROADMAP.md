@@ -95,16 +95,16 @@ Success criteria:
 3. Fallback to niftytrader.in works when primary fails
 4. Gap vs previous Nifty close computed correctly
 5. Score: 1% gap→0.5, -2% gap→-1.0
-6. All 6 tests pass
+6. All 21 tests pass
 
 **Plans:** 2 plans (2 waves)
 ```
 Plans:
-- [x] 04-01-PLAN.md — AngelOneClient extension + browser singleton + GIFTNiftyCollector — Wave 1
-- [ ] 04-02-PLAN.md — Tests for GIFTNiftyCollector — Wave 2
+- [x] 04-01-PLAN.md — AngelOneClient extension + browser singleton + GIFTNiftyCollector — Wave 1 ✓
+- [x] 04-02-PLAN.md — Tests for GIFTNiftyCollector — Wave 2 ✓
 ```
 Wave 2 *(blocked on Wave 1 completion)*:
-Cross-cutting constraints: GIFTNiftyCollector subclasses BaseVarianceCollector. Browser singleton lives in _browser.py following _nse.py/ _angel.py lazy-init pattern. get_previous_close() added to AngelOneClient per D-01/D-05. Tests mock both browser and AngelOneClient (no live services). Scoring follows D-06: max(-1.0, min(1.0, gap_pct * 50)).
+Cross-cutting constraints: GIFTNiftyCollector subclasses BaseVarianceCollector. Browser singleton lives in _browser.py following _nse.py/ _angel.py lazy-init pattern. get_previous_close() added to AngelOneClient per D-01/D-05. Tests mock both browser and AngelOneClient (no live services). Scoring follows D-06: max(-1.0, min(1.0, gap_pct * 0.5)).
 
 **Phase 5: Global & Macro**
 Goal: Build GlobalMarketsCollector and MacroCollector using yfinance with weighted scoring logic.
@@ -117,6 +117,17 @@ Success criteria:
 5. Macro scoring: USD/INR 35%, Crude 30%, Gold 15%, US10Y 20% (all inverse)
 6. Missing tickers handled gracefully (skip, don't crash)
 7. All 7 tests pass
+
+**Plans:** 3 plans (3 waves)
+```
+Plans:
+- [ ] 05-01-PLAN.md — GlobalMarketsCollector + config + registration — Wave 1
+- [ ] 05-02-PLAN.md — MacroCollector + config + registration — Wave 2
+- [ ] 05-03-PLAN.md — Tests for both collectors — Wave 3
+```
+Wave 2 *(blocked on Wave 1 completion)*: Both plans modify __init__.py and config/base.yaml.
+Wave 3 *(blocked on both Wave 1 and 2)*: Tests need both collector files to exist.
+Cross-cutting constraints: Both collectors subclass BaseVarianceCollector. Both use yfinance via asyncio.to_thread() per D-01. GlobalMarketsCollector has DXY -10% modifier. MacroCollector uses all-inverse scoring. Both implement per-ticker error handling with weight renormalization per D-17. No shared dependencies between collectors. Tests mock _compute_change_pct (no live yfinance).
 
 **Phase 6: MVE Orchestrator**
 Goal: Build MarketVarianceEngine that orchestrates all 5 dimension collectors, implements market-hours-aware scheduling, publishes MVS to Redis, and exposes Prometheus metrics.

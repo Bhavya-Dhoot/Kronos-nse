@@ -6,16 +6,24 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 4 — GIFT Nifty (Planned 2026-06-04)
+**Current focus:** Phase 5 — Global & Macro (Planning 2026-06-04)
 
 ## Current Phase
 
+**Phase 5: Global & Macro**
+- Requirements: GLB-01/02/03, MAC-01/02
+- Status: Planning
+- Plans: 3 plans (05-01, 05-02, 05-03) — 3 waves
+- Last Activity: 2026-06-04 (plans created)
+
+## Previous Phase
+
 **Phase 4: GIFT Nifty**
-- Requirements: GFT-01/02/03/04/05 (implementation complete, tests pending Plan 04-02)
-- Status: In progress
-- Plans: 2 plans (04-01 ✓, 04-02) — 2 waves — Wave 1 done, Wave 2 ready
-- Last Activity: 2026-06-04 (Plan 04-01 executed)
-- Tests: Pending (6 tests planned for Plan 04-02)
+- Requirements: GFT-01/02/03/04/05
+- Status: Complete ✅
+- Plans: 2 plans (04-01, 04-02) — 2 waves — all executed
+- Last Activity: 2026-06-04 (all plans committed)
+- Tests: 21 Phase-4 tests passing
 
 ## Progress
 
@@ -24,8 +32,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | 1. Scaffold & Score | Complete | SCF-01–04, BASE-01–04 |
 | 2. VIX & Options | Complete | VIX-01–03, OPT-01–06 |
 | 3. Institutional Flow | Complete | FII-01–02, OIC-01–03 |
-| 4. GIFT Nifty | In Progress | GFT-01–05 |
-| 5. Global & Macro | Pending | GLB-01–03, MAC-01–02 |
+| 4. GIFT Nifty | Complete | GFT-01–05 |
+| 5. Global & Macro | Planning | GLB-01–03, MAC-01–02 |
 | 6. Orchestrator | Pending | ENG-01–07 |
 | 7. PredictionModifier | Pending | MOD-01–08 |
 | 8. API & UI | Pending | API-01–04, UI-01–05 |
@@ -49,8 +57,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | get_previous_close() on AngelOneClient | Fetches last daily close via getCandleData for gap computation | Done — 04-01 |
 | Browser singleton in _browser.py | Matches _nse.py/_angel.py lazy singleton pattern, ~150MB headless | Done — 04-01 |
 | GIFTNiftyCollector with Scrapling | Playwright-based scraping of Groww/NiftyTrader for GIFT Nifty value | Done — 04-01 |
-| GIFT Nifty scoring: max(-1.0, min(1.0, gap_pct*50)) | 0% gap→0.0, 1% gap→0.5, 2% gap→1.0, -2% gap→-1.0 | Done — 04-01 |
-| Groww primary + NiftyTrader fallback | Dual-source reliability per D-08/D-09 | Done — 04-01 |
+| GIFT Nifty scoring: max(-1.0, min(1.0, gap_pct*0.5)) | 0% gap→0.0, 1% gap→0.5, 2% gap→1.0, -2% gap→-1.0 | Done — 21 tests pass |
+| Groww primary + NiftyTrader fallback | Dual-source reliability per D-08/D-09 | Done — 21 tests pass |
+| Playwright browser singleton in _browser.py | Lazy async singleton matching _nse.py pattern | Done — 21 tests pass |
+| get_previous_close() on AngelOneClient | Daily candle close via Angel Smart API for gap computation | Done — 21 tests pass |
 | yfinance for global/macro | Free, well-tested, sufficient freq | — Pending |
 | NseIndiaApi for NSE data | Manages NSE cookies/sessions | — Pending |
 | Per-collector circuit breakers | Prevents cascading failures | — Pending |
