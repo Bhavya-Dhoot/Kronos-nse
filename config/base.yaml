@@ -159,6 +159,17 @@ variance:
     primary_url: "https://groww.in/markets/gift-nifty"
     fallback_url: "https://niftytrader.in/gift-nifty"
 
+  global_markets:
+    tickers:
+      ES=F: 0.30
+      NQ=F: 0.20
+      YM=F: 0.10
+      ^N225: 0.15
+      ^HSI: 0.12
+      000001.SS: 0.08
+      ^KS11: 0.05
+      DX-Y.NYB: -0.10
+
   mve_history:
     retention_days: 30
 
