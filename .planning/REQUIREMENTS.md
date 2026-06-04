@@ -41,9 +41,9 @@
 
 ### Futures OI Collector
 
-- [ ] **OIC-01**: `OICollector` polls Nifty/BankNifty futures OI every 5min via Angel One
-- [ ] **OIC-02**: OI change percentage computed against previous poll (stored in Redis)
-- [ ] **OIC-03**: OI scoring: >3% buildup→+0.3, <-3% unwind→-0.3
+- [x] **OIC-01**: `OICollector` polls Nifty/BankNifty futures OI every 5min via Angel One
+- [x] **OIC-02**: OI change percentage computed against previous poll (stored in Redis)
+- [x] **OIC-03**: OI scoring: >3% buildup→+0.3, <-3% unwind→-0.3
 
 ### GIFT Nifty Collector
 
@@ -136,7 +136,7 @@
 | VIX-01, VIX-02, VIX-03 | Phase 2 | Pending |
 | OPT-01, OPT-02, OPT-03, OPT-04, OPT-05, OPT-06 | Phase 2 | Pending |
 | FII-01, FII-02 | Phase 3 | Pending |
-| OIC-01, OIC-02, OIC-03 | Phase 3 | Pending |
+| OIC-01, OIC-02, OIC-03 | Phase 3 | Complete ✅ |
 | GFT-01, GFT-02, GFT-03, GFT-04, GFT-05 | Phase 4 | Pending |
 | GLB-01, GLB-02, GLB-03 | Phase 5 | Pending |
 | MAC-01, MAC-02 | Phase 5 | Pending |

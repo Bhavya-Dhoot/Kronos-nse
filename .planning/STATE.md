@@ -12,13 +12,13 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Phase 3: Institutional Flow**
 - Requirements: FII-01/02, OIC-01/02/03
-- Status: Executing (1/3 plans complete)
+- Status: Executing (2/3 plans complete)
 - Plans: 3 plans (03-01, 03-02, 03-03) — 2 waves
   - 03-01: FII/DII Collector — Pending (Wave 1)
   - 03-02: InstitutionalDimensionAggregator — Complete ✅
-  - 03-03: OI Collector — Pending (Wave 2)
-- Last Activity: 2026-06-04 (03-02 aggregator built, 18 tests passing)
-- Tests: 18 aggregator tests passing
+  - 03-03: OI Collector — Complete ✅
+- Last Activity: 2026-06-04 (03-03 OICollector built, 22 tests passing)
+- Tests: 22 OICollector tests passing
 
 ## Progress
 
@@ -39,6 +39,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Aggregator is standalone class, not collector | No fetch/parse/poll contract needed; pure score combination | Done — 18 tests pass |
+| poll_with_baseline() dedicated method | Keeps standard poll() chain clean; baseline tracking callable when Redis available | Done — 22 tests pass |
+| OI baseline stored per-symbol + aggregate | Enables per-symbol analysis without extra queries | Done |
+| Baseline TTL=3600s | 1-hour window supports 300s polling interval | Done |
 | INSTITUTIONAL_WEIGHT=0.25 as module constant | Reusable config for MVE composite | Done |
 | Partial-data: reduce active_weight, not stale | More informative than marking everything stale | Done |
 | Post-processing layer | Faster iteration than retraining | — Pending |
