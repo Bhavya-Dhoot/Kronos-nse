@@ -2,7 +2,7 @@
 
 ## Milestone: MVE Core
 
-**9 phases** | **62 requirements mapped** | All v1 requirements covered ✓
+**9 phases** | **62 requirements mapped** | **3 waves (Phase 6)** | All v1 requirements covered ✓
 
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
@@ -142,6 +142,18 @@ Success criteria:
 7. Engine ready only after 3+ dimensions have data
 8. Degraded mode after 30s with fewer than 3 dimensions
 9. Prometheus metrics exposed correctly
+
+**Plans:** 4 plans (3 waves)
+```
+Plans:
+- [ ] 06-01-PLAN.md — GlobalDimensionAggregator — Wave 1
+- [ ] 06-02-PLAN.md — MarketVarianceEngine (core) — Wave 2
+- [ ] 06-03-PLAN.md — FastAPI lifespan + --standalone-mve integration — Wave 3
+- [ ] 06-04-PLAN.md — Aggregator + Engine tests — Wave 3
+```
+Wave 2 *(blocked on Wave 1 completion)*: Engine imports GlobalDimensionAggregator.
+Wave 3 *(blocked on Wave 2 completion)*: Integration and tests both need engine to exist; no file conflicts between them.
+Cross-cutting constraints: Engine subclasses use BaseVarianceCollector from Phase 1. Aggregators follow InstitutionalDimensionAggregator pattern from Phase 3. Tests follow Phase 1-5 patterns (AsyncMock, fixtures, parametrize). Engine accesses RedisCache publish_mvs/set_mve methods from existing data/storage/redis_cache.py.
 
 **Phase 7: PredictionModifier**
 Goal: Build PredictionModifier — the most intellectually critical component — applying 5 layers of MVS-driven modification to Kronos predictions.
