@@ -3,5 +3,9 @@
 from __future__ import annotations
 
 from variance.base_collector import BaseVarianceCollector
+from variance.engine import MarketVarianceEngine
 
-__all__ = ["BaseVarianceCollector"]
+__all__ = [
+    "BaseVarianceCollector",
+    "MarketVarianceEngine",
+]
