@@ -76,7 +76,7 @@ Success criteria:
 ```
 Plans:
 - [ ] 03-01-PLAN.md — Angel singleton + FIIDIICollector + tests — Wave 1
-- [ ] 03-02-PLAN.md — InstitutionalDimensionAggregator + tests — Wave 1
+- [x] 03-02-PLAN.md — InstitutionalDimensionAggregator + tests — Wave 1 ✓
 - [ ] 03-03-PLAN.md — OICollector + OI tests — Wave 2
 ```
 
