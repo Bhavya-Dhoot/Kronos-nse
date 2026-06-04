@@ -31,6 +31,15 @@ Success criteria:
 7. Market state classified correctly (FEAR/PANIC/BULL_RUN/etc.)
 8. Derived properties (temperature_adjustment, directional_bias, etc.) compute correctly
 
+**Plans:** 4 plans (3 waves)
+```
+Plans:
+- [ ] 01-01-PLAN.md — Foundation scaffold (dir tree, deps, config) — Wave 1
+- [ ] 01-02-PLAN.md — Data contracts (schema, score dataclass, Redis) — Wave 2
+- [ ] 01-03-PLAN.md — BaseVarianceCollector abstract class — Wave 2
+- [ ] 01-04-PLAN.md — Tests (collector + scoring math, 15 tests) — Wave 3
+```
+
 **Phase 2: VIX & Options Sentiment**
 Goal: Build the two most important NSE-specific collectors — India VIX (60s poll) and NIFTY options sentiment (300s poll).
 Requirements: VIX-01, VIX-02, VIX-03, OPT-01, OPT-02, OPT-03, OPT-04, OPT-05, OPT-06

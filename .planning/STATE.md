@@ -12,7 +12,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Phase 1: Scaffold & Score Foundation**
 - Requirements: SCF-01/02/03/04, BASE-01/02/03/04
-- Status: Pending
+- Status: Ready to execute
+- Plans: 4 plans (01-01 through 01-04), 3 waves
+- Last Activity: 2026-06-04 (plan created)
 
 ## Progress
 
