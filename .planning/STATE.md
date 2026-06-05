@@ -13,8 +13,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 **Phase 7: PredictionModifier**
 - Requirements: MOD-01/02/03/04/05/06/07/08
 - Status: In Progress
-- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03 done, 07-04 pending
-- Last Activity: 2026-06-05 (Plan 03 committed)
+- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03 done, 07-04 done
+- Last Activity: 2026-06-05 (07-04 completed — 18 test cases for PredictionModifier)
 
 ## Previous Phase
 
@@ -45,7 +45,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | 4. GIFT Nifty | Complete | GFT-01–05 |
 | 5. Global & Macro | Complete | GLB-01–03, MAC-01–02 |
 | 6. Orchestrator | Complete | ENG-01–07 |
-| 7. PredictionModifier | In Progress | MOD-01–08 |
+| 7. PredictionModifier | Complete ✅ | MOD-01–08 |
 | 8. API & UI | Pending | API-01–04, UI-01–05 |
 | 9. DQG & System Test | Pending | DQG-01–05 |
 
@@ -106,4 +106,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | api/helpers.compute_confidence() checks mve_confidence flag | D-20: override from prediction dict, fallback to computed | Done — 07-03 |
 | api/helpers.engine_result_to_prediction() passes mve_confidence from result | Routes modifier-set flag through to API response | Done — 07-03 |
 
-*Last updated: 2026-06-05 after Plan 07-03 execution*
+| MVS mocked via MockMVE in all modifier tests | No live MVE/Redis/collectors — MockMVE implements only `is_ready`+`last_mvs` | Done — 18 tests pass 07-04 |
+| Directional bias formula validated: shift_pct = bias * bias_scale * 0.01 | D-11: bar 0=1.0 scale, last bar=0.5 scale, verified with pytest.approx() | Done — 07-04 |
+| Band scaling formula validated: midpoint widen with mult | D-15: mid=(H+L)/2, new_H=mid+(H-mid)*mult, new_L=mid-(mid-L)*mult | Done — 07-04 |
+| Temperature cap at +0.3 verified | (VIX-15)*0.015 cap tested via make_mvs(temperature_adjustment=0.3) | Done — 07-04 |
+
+*Last updated: 2026-06-05 after Plan 07-04 execution*
