@@ -135,3 +135,91 @@ def client() -> TestClient:
     app.state.operating_mode = "VISUAL"
 
     return TestClient(app)
+
+
+class TestVarianceScore:
+    """GET /api/v1/variance/score"""
+
+    def test_score_returns_200_with_mvs(self, client: TestClient):
+        resp = client.get("/api/v1/variance/score")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["composite"] == 0.35
+        assert body["market_state"] == "bull_run"
+        assert body["vix_value"] == 14.2
+        assert "dimensions" in body
+        assert len(body["dimensions"]) == 7
+        assert body["temperature_adjustment"] == 0.0
+        assert body["directional_bias"] == 0.35
+        assert body["signal_threshold"] == 0.005
+
+    def test_score_returns_204_when_not_ready(self, client: TestClient):
+        client.app.state.mve.is_ready = False
+        client.app.state.mve.last_mvs = None
+        resp = client.get("/api/v1/variance/score")
+        assert resp.status_code == 204
+
+    def test_score_returns_204_when_mve_none(self, client: TestClient):
+        client.app.state.mve = None
+        resp = client.get("/api/v1/variance/score")
+        assert resp.status_code == 204
+
+    def test_score_returns_204_when_last_mvs_none(self, client: TestClient):
+        client.app.state.mve.last_mvs = None
+        resp = client.get("/api/v1/variance/score")
+        assert resp.status_code == 204
+
+
+class TestVarianceDimensions:
+    """GET /api/v1/variance/dimensions/{name}"""
+
+    def test_dimension_returns_detail(self, client: TestClient):
+        resp = client.get("/api/v1/variance/dimensions/vix")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["name"] == "vix"
+        assert body["score"] == -0.15
+        assert "weight" in body
+        assert "is_stale" in body
+        assert "collected_at" in body
+
+    def test_dimension_returns_404_for_unknown(self, client: TestClient):
+        resp = client.get("/api/v1/variance/dimensions/invalid_dim")
+        assert resp.status_code == 404
+
+    def test_dimension_returns_404_when_mve_none(self, client: TestClient):
+        client.app.state.mve = None
+        resp = client.get("/api/v1/variance/dimensions/vix")
+        assert resp.status_code == 404
+
+
+class TestVarianceHistory:
+    """GET /api/v1/variance/history"""
+
+    def test_history_returns_empty_list(self, client: TestClient):
+        resp = client.get("/api/v1/variance/history")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["entries"] == []
+        assert body["total"] == 0
+
+    def test_history_returns_entries_when_redis_has_data(self, client: TestClient):
+        import json
+        entry = _sample_mvs_dict()
+        client.app.state.mve_redis._client.lrange = AsyncMock(
+            return_value=[json.dumps(entry)]
+        )
+        resp = client.get("/api/v1/variance/history")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["entries"]) >= 1
+        assert body["total"] >= 1
+        assert "composite" in body["entries"][0]
+
+    def test_history_returns_empty_when_redis_none(self, client: TestClient):
+        client.app.state.mve_redis = None
+        resp = client.get("/api/v1/variance/history")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["entries"] == []
+        assert body["total"] == 0
