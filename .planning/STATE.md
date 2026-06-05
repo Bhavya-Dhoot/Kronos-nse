@@ -13,8 +13,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 **Phase 7: PredictionModifier**
 - Requirements: MOD-01/02/03/04/05/06/07/08
 - Status: In Progress
-- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03/04 pending
-- Last Activity: 2026-06-05 (Plan 02 committed)
+- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03 done, 07-04 pending
+- Last Activity: 2026-06-05 (Plan 03 committed)
 
 ## Previous Phase
 
@@ -99,4 +99,11 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | modify_pre_inference called before predictor.predict() for temperature | MVS VIX adjustment layers on top of regime temperature | Done — 07-02 |
 | modify_post_inference called after _df_to_result() before Redis/DB | Bias, bands, OHLCV constraints, confidence applied to result dict | Done — 07-02 |
 
-*Last updated: 2026-06-05 after Plan 07-02 execution*
+| HeadlessRunner._compute_signal() changed to instance method to read MVS | Engine access requires self._engine._mve — can't be static | Done — 07-03 |
+| MVS signal_threshold replaces hardcoded 0.005 in direction classification | D-22/D-23: dynamic threshold adjusts for market volatility | Done — 07-03 |
+| MVS confidence_override applied after computed confidence | D-19/D-20: PANIC/FEAR/UNCERTAIN overrides to LOW | Done — 07-03 |
+| Safe getattr fallback when MVE not configured | Graceful degradation: try/except with 0.005 default | Done — 07-03 |
+| api/helpers.compute_confidence() checks mve_confidence flag | D-20: override from prediction dict, fallback to computed | Done — 07-03 |
+| api/helpers.engine_result_to_prediction() passes mve_confidence from result | Routes modifier-set flag through to API response | Done — 07-03 |
+
+*Last updated: 2026-06-05 after Plan 07-03 execution*
