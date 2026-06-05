@@ -120,6 +120,7 @@ class MarketVarianceEngine:
         self._collectors = collectors
         self._redis = redis_cache
         self._config = config or {}
+        self._config_overlay: dict[str, Any] = {}  # Ephemeral runtime overlay per D-05
 
         # ── async task tracking ────────────────────────────────────────────
         self._tasks: dict[str, asyncio.Task] = {}
@@ -206,6 +207,80 @@ class MarketVarianceEngine:
         }
         key = weight_map.get(name, name)
         return weights.get(key, 0.2)
+
+    def _get_config(self, key: str, default: Any = None) -> Any:
+        """Get a config value, checking the runtime overlay first (D-05/D-10).
+
+        Parameters
+        ----------
+        key : str
+            Dot-separated config key, e.g. "weights.vix" or "modification.temperature_base".
+        default : Any
+            Fallback value if key not found in overlay or base config.
+
+        Returns
+        -------
+        Any
+            Value from overlay if present, else from base config, else default.
+        """
+        parts = key.split(".")
+        # Check overlay first
+        overlay_val = self._config_overlay
+        for part in parts:
+            if isinstance(overlay_val, dict):
+                overlay_val = overlay_val.get(part)
+            else:
+                overlay_val = None
+                break
+        if overlay_val is not None:
+            return overlay_val
+        # Fallback to base config
+        base_val = self._config
+        for part in parts:
+            if isinstance(base_val, dict):
+                base_val = base_val.get(part)
+            else:
+                base_val = None
+                break
+        return base_val if base_val is not None else default
+
+    def apply_config_overlay(self, overlay: dict[str, Any]) -> None:
+        """Apply a runtime config overlay (D-05).
+
+        Merges the overlay into self._config_overlay. Does NOT write to YAML.
+        Restart restores defaults.
+
+        Parameters
+        ----------
+        overlay : dict[str, Any]
+            Config sections to override (e.g. {"weights": {"vix": 0.30}}).
+        """
+        for key, value in overlay.items():
+            if isinstance(value, dict) and key in self._config_overlay:
+                self._config_overlay[key].update(value)
+            else:
+                self._config_overlay[key] = value
+
+    def get_merged_config(self) -> dict[str, Any]:
+        """Return the full merged config (base + overlay) for API response (D-08).
+
+        Returns a deep copy to prevent mutation of internal state. Overlay keys
+        replace base keys at the top level.
+        """
+        import copy
+
+        merged = copy.deepcopy(self._config)
+        for key, value in self._config_overlay.items():
+            if isinstance(value, dict) and key in merged and isinstance(merged[key], dict):
+                merged[key].update(value)
+            else:
+                merged[key] = value
+        return merged
+
+    @property
+    def config_overlay(self) -> dict[str, Any]:
+        """Return the current runtime config overlay (read-only view)."""
+        return dict(self._config_overlay)
 
     # ── lifecycle ──────────────────────────────────────────────────────────
 

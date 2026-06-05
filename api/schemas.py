@@ -203,4 +203,22 @@ class VarianceHistoryResponse(BaseModel):
     total: int = 0
 
 
+class VarianceConfigUpdate(BaseModel):
+    """PATCH /api/v1/variance/config request body — all fields optional for partial updates."""
+
+    weights: dict[str, float] | None = None
+    modification: dict[str, Any] | None = None
+    poll_interval_seconds: dict[str, int] | None = None
+
+
+class MveConfigResponse(BaseModel):
+    """Full merged MVE config (base + overlay) returned after update."""
+
+    weights: dict[str, float] = Field(default_factory=dict)
+    modification: dict[str, Any] = Field(default_factory=dict)
+    poll_interval_seconds: dict[str, int] = Field(default_factory=dict)
+    engine: dict[str, Any] = Field(default_factory=dict)
+    mve_history: dict[str, Any] = Field(default_factory=dict)
+
+
 
