@@ -116,11 +116,13 @@ class MarketVarianceEngine:
         collectors: dict[str, BaseVarianceCollector],
         redis_cache: RedisCache,
         config: dict[str, Any] | None = None,
+        timescale: Any | None = None,   # TimescaleClient for mve_history persistence (DQG-03 / D-16)
     ) -> None:
         self._collectors = collectors
         self._redis = redis_cache
         self._config = config or {}
         self._config_overlay: dict[str, Any] = {}  # Ephemeral runtime overlay per D-05
+        self._timescale = timescale  # TimescaleClient for mve_history persistence (DQG-03 / D-16)
 
         # ── async task tracking ────────────────────────────────────────────
         self._tasks: dict[str, asyncio.Task] = {}
@@ -310,6 +312,9 @@ class MarketVarianceEngine:
             len(self._tasks),
             self._current_state.value,
         )
+
+        # Replay MVS history from TimescaleDB to Redis if needed (D-17)
+        asyncio.create_task(self._replay_history_from_timescaledb())
 
     async def stop(self) -> None:
         """Stop the engine: cancel all collector tasks (D-15).
@@ -529,6 +534,13 @@ class MarketVarianceEngine:
         except Exception:
             logger.exception("Failed to publish MVS to Redis")
 
+        # ── Persistent mve_history write (DQG-03 / D-16) ──────────────────────
+        if self._timescale is not None and mvs_dict is not None:
+            try:
+                await self._timescale.insert_mve_history(mvs_dict)
+            except Exception:
+                logger.exception("Failed to persist mve_history entry to TimescaleDB")
+
         self._last_composite = mvs.composite
         self._last_mvs_dict = mvs_dict
 
@@ -541,6 +553,46 @@ class MarketVarianceEngine:
                 1.0 if col.is_available else 0.0
             )
         self._metric_mvs_age.set(time.monotonic() - self._mvs_age_tracker)
+
+    # ── TimescaleDB replay ─────────────────────────────────────────────────
+
+    async def _replay_history_from_timescaledb(self) -> None:
+        """Replay MVS history from TimescaleDB to Redis if Redis cache is empty (D-17).
+
+        Called during engine start() when Redis mve:mvs:history is empty.
+        Replays the last 1000 entries.
+        """
+        if self._timescale is None:
+            return
+
+        try:
+            # Check if Redis history is empty
+            history_len = await self._redis._client.llen("mve:mvs:history")
+            if history_len is not None and history_len > 0:
+                logger.info(
+                    "Redis mve:mvs:history has %d entries — skipping TimescaleDB replay",
+                    history_len,
+                )
+                return
+
+            entries = await self._timescale.get_mve_history(limit=1000)
+            if not entries:
+                logger.info("No mve_history entries to replay from TimescaleDB")
+                return
+
+            import json
+            history_key = "mve:mvs:history"
+
+            for entry in entries:
+                await self._redis._client.rpush(history_key, json.dumps(entry))
+
+            # Trim to 1000 and set 24h TTL (matches D-10 pattern)
+            await self._redis._client.ltrim(history_key, -1000, -1)
+            await self._redis._client.expire(history_key, 86400)
+
+            logger.info("Replayed %d mve_history entries from TimescaleDB to Redis", len(entries))
+        except Exception:
+            logger.exception("Failed to replay mve_history from TimescaleDB")
 
     # ── public properties ──────────────────────────────────────────────────
 
