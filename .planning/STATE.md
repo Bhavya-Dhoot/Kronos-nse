@@ -6,15 +6,16 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 9 — DQG & System Test (Context gathered 2026-06-05)
+**Current focus:** Completed — MVE v1 delivered
 
-## Current Phase
+## Previous Phase
 
 **Phase 9: DQG & System Test**
 - Requirements: DQG-01/02/03/04/05
-- Status: Ready to execute
-- Plans: 5 plans (09-01 through 09-05) in 3 waves
-- Last Activity: 2026-06-05 (PLAN.md with 5 plans, 12 tasks, 3 waves)
+- Status: Complete ✅
+- Plans: 5 plans (09-01 through 09-05) in 3 waves — all executed
+- Last Activity: 2026-06-05 (all plans committed, 139 tests passing)
+- Key Deliverables: check_mve_health() in DQG, PATCH /api/v1/variance/config ephemeral overlay, mve_history hypertable with dual write, backtest_mve.py comparison script, 6 MVE lifecycle integration tests
 
 ## Previous Phase
 
@@ -55,8 +56,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | 5. Global & Macro | Complete | GLB-01–03, MAC-01–02 |
 | 6. Orchestrator | Complete | ENG-01–07 |
 | 7. PredictionModifier | Complete ✅ | MOD-01–08 |
-| 8. API & UI | Pending | API-01–04, UI-01–05 |
-| 9. DQG & System Test | Pending | DQG-01–05 |
+| 8. API & UI | Complete ✅ | API-01–04, UI-01–05 |
+| 9. DQG & System Test | Complete ✅ | DQG-01–05 |
 
 ## Key Decisions Log
 
@@ -135,4 +136,15 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | DQG panel MVE status row | UI-04: compact dims/MVS/state/age badge row | Done — 08-04 |
 | MVE initialized in all modes via lifespan | UI-05: handled by Phase 6 lifespan integration | Done — 06-03 |
 
-*Last updated: 2026-06-05 after Phase 8 completion*
+| check_mve_health() is warning-level (non-critical) DQG check | D-01: ingested via optional `mve` param on DataQualityGate — backward compatible | Done — 09-01 |
+| check_mve_health() returns active/stale/circuit-broken fields | D-02: passes if ≥3 dims active, 0→FAIL, 1-2→WARN, 3+→PASS | Done — 09-01 |
+| PATCH config is ephemeral overlay — no YAML writes | D-05: _config_overlay dict checked before _config base dict | Done — 09-02 |
+| Validation: unknown fields get 422 all-or-nothing | D-07: first invalid field returns error detail | Done — 09-02 |
+| Full merged config returned in PATCH response | D-08: overlay + base combined | Done — 09-02 |
+| mve_history hypertable with 1d chunks, 7d compress, 30d retention | D-11/13/14: sequential .sql migration pattern | Done — 09-03 |
+| Dual write: Redis + TimescaleDB in _recompute_mvs() | D-16: engine accepts optional `timescale` param for graceful degradation | Done — 09-03 |
+| Startup replay from TimescaleDB to Redis when empty | D-17: loads recent history on engine start | Done — 09-03 |
+| Backtest runner uses _MockMVE helper with fixed MVS | D-18/20: no running engine needed; compares unmodified/modified/diff | Done — 09-04 |
+| Integration tests use direct engine control via _on_dimension_update() | D-25: synthetic collector data with MockRedis + MockTimescale | Done — 09-05 |
+
+*Last updated: 2026-06-05 after Phase 9 completion*

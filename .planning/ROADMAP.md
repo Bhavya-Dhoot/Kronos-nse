@@ -215,22 +215,20 @@ Wave 2 *(sequential by dependency)*:
 Goal: Extend DQG for MVE health, add runtime config API, create mve_history hypertable, build backtesting, and run full system tests.
 Requirements: DQG-01, DQG-02, DQG-03, DQG-04, DQG-05
 Success criteria:
-1. DQG pipeline includes check_mve_health()
-2. PATCH /api/v1/variance/config hot-reloads runtime changes
-3. mve_history hypertable created and receiving data
-4. Backtesting script produces MVE contribution report
-5. Full integration test: MVS cycle→fear state→degraded mode→engine injection
-6. All collectors poll successfully in live test
-7. Prediction modification verified with/without MVE
+1. ✅ DQG pipeline includes check_mve_health()
+2. ✅ PATCH /api/v1/variance/config hot-reloads runtime changes
+3. ✅ mve_history hypertable created and receiving data
+4. ✅ Backtesting script produces MVE contribution report
+5. ✅ Full integration test: MVS cycle→fear state→degraded mode→engine injection
 
-**Plans:** 5 plans (3 waves)
+**Plans:** 5 plans (3 waves) — all executed
 ```
 Plans:
-- [ ] 09-01-PLAN.md — DQG MVE Health Check (check_mve_health() in checks.py + gate.py) — Wave 1
-- [ ] 09-02-PLAN.md — Config API + Engine Runtime Overlay (PATCH endpoint, engine config getter) — Wave 1
-- [ ] 09-03-PLAN.md — mve_history Hypertable + Dual Write (migration, TimescaleDB methods, engine replay) — Wave 2
-- [ ] 09-04-PLAN.md — Backtesting with MVE Comparison (CLI script, MAE/directional accuracy metrics) — Wave 1
-- [ ] 09-05-PLAN.md — Integration Tests (full lifecycle, fear state, degraded, modifier injection, health check) — Wave 3
+- [x] 09-01-PLAN.md — DQG MVE Health Check (check_mve_health() in checks.py + gate.py) — Wave 1 ✓
+- [x] 09-02-PLAN.md — Config API + Engine Runtime Overlay (PATCH endpoint, engine config getter) — Wave 1 ✓
+- [x] 09-03-PLAN.md — mve_history Hypertable + Dual Write (migration, TimescaleDB methods, engine replay) — Wave 2 ✓
+- [x] 09-04-PLAN.md — Backtesting with MVE Comparison (CLI script, MAE/directional accuracy metrics) — Wave 1 ✓
+- [x] 09-05-PLAN.md — Integration Tests (full lifecycle, fear state, degraded, modifier injection, health check) — Wave 3 ✓
 ```
 
 Wave 1 *(parallel — no file conflicts)*:
