@@ -173,7 +173,7 @@ Success criteria:
 ```
 Plans:
 - [x] 07-01-PLAN.md — PredictionModifier class (modify_pre_inference + post_inference) — Wave 1 ✓
-- [ ] 07-02-PLAN.md — KronosEngine integration (modifier injection + predict() hooks) — Wave 2
+- [x] 07-02-PLAN.md — KronosEngine integration (modifier injection + predict() hooks) — Wave 2 ✓
 - [ ] 07-03-PLAN.md — HeadlessRunner + API helpers (MVS signal_threshold + confidence) — Wave 2
 - [ ] 07-04-PLAN.md — Tests (10+ test cases for PredictionModifier) — Wave 2
 ```

@@ -13,8 +13,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 **Phase 7: PredictionModifier**
 - Requirements: MOD-01/02/03/04/05/06/07/08
 - Status: In Progress
-- Plans: 4 plans planned — 07-01 done, 07-02/03/04 pending
-- Last Activity: 2026-06-05 (Plan 01 committed)
+- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03/04 pending
+- Last Activity: 2026-06-05 (Plan 02 committed)
 
 ## Previous Phase
 
@@ -95,5 +95,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Directional bias only affects pred_close with linear decay | D-10/D-12: 1.0→0.5 decay, multiplicative shift per D-13 | Done — 07-01 |
 | OHLCV constraints after all modifications | D-17: high=max(high,O,C), low=min(low,O,C), volume>=0 | Done — 07-01 |
 | Confidence override sets mve_confidence flag, direction unchanged | D-19/D-21: PANIC/FEAR→LOW, only confidence not direction | Done — 07-01 |
+| PredictionModifier injected as optional param in KronosEngine.__init__ | None default preserves existing behavior | Done — 07-02 |
+| modify_pre_inference called before predictor.predict() for temperature | MVS VIX adjustment layers on top of regime temperature | Done — 07-02 |
+| modify_post_inference called after _df_to_result() before Redis/DB | Bias, bands, OHLCV constraints, confidence applied to result dict | Done — 07-02 |
 
-*Last updated: 2026-06-05 after Plan 07-01 execution*
+*Last updated: 2026-06-05 after Plan 07-02 execution*
