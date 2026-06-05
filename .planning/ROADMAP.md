@@ -175,7 +175,7 @@ Plans:
 - [x] 07-01-PLAN.md — PredictionModifier class (modify_pre_inference + post_inference) — Wave 1 ✓
 - [x] 07-02-PLAN.md — KronosEngine integration (modifier injection + predict() hooks) — Wave 2 ✓
 - [x] 07-03-PLAN.md — HeadlessRunner + API helpers (MVS signal_threshold + confidence) — Wave 2 ✓
-- [ ] 07-04-PLAN.md — Tests (10+ test cases for PredictionModifier) — Wave 2
+- [x] 07-04-PLAN.md — Tests (10+ test cases for PredictionModifier) — Wave 2 ✓
 ```
 
 **Phase 8: API & UI**
@@ -191,6 +191,25 @@ Success criteria:
 7. FEAR/PANIC states show red border + "HIGH VOLATILITY" banner
 8. DQG panel includes MVE health status
 9. main.py initializes MVE in all modes
+
+**Plans:** 5 plans (2 waves)
+```
+Plans:
+- [ ] 08-01-PLAN.md — Variance REST API routes (score, dimensions/{name}, history) — Wave 1
+- [ ] 08-02-PLAN.md — WS /ws/variance + Redis history listener — Wave 2 (depends: 08-01)
+- [ ] 08-03-PLAN.md — React scaffold + MarketVariancePanel (gauge, bars, badge, impact) — Wave 1
+- [ ] 08-04-PLAN.md — CandleChart overlay + DQG MVE row + FEAR/PANIC UI — Wave 2 (depends: 08-03)
+- [ ] 08-05-PLAN.md — Integration tests + static UI serving — Wave 2 (depends: 08-01, 08-02)
+```
+
+Wave 1 *(parallel — backend + frontend)*:
+- 08-01 and 08-03 have no file conflicts (backend vs frontend) — can run in parallel
+
+Wave 2 *(sequential by dependency)*:
+- 08-02 (WS) runs after 08-01
+- 08-04 (chart overlay) runs after 08-03
+- 08-05 (tests) runs after 08-01 and 08-02
+- No file conflicts between 08-02 and 08-04 (different domains)
 
 **Phase 9: DQG & System Test**
 Goal: Extend DQG for MVE health, add runtime config API, create mve_history hypertable, build backtesting, and run full system tests.
