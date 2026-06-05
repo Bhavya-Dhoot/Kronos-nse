@@ -6,15 +6,24 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 7 — PredictionModifier (In Progress 2026-06-05)
+**Current focus:** Phase 8 — API & UI (Context gathered 2026-06-05)
 
 ## Current Phase
 
+**Phase 8: API & UI**
+- Requirements: API-01/02/03/04, UI-01/02/03/04/05
+- Status: Context gathered — ready for planning
+- Plans: Not yet created
+- Last Activity: 2026-06-05 (CONTEXT.md with 12 decisions)
+
+## Previous Phase
+
 **Phase 7: PredictionModifier**
 - Requirements: MOD-01/02/03/04/05/06/07/08
-- Status: In Progress
-- Plans: 4 plans planned — 07-01 done, 07-02 done, 07-03 done, 07-04 done
-- Last Activity: 2026-06-05 (07-04 completed — 18 test cases for PredictionModifier)
+- Status: Complete ✅
+- Plans: 4 plans — all completed
+- Last Activity: 2026-06-05 (all plans committed)
+- Tests: 18 Phase-7 tests passing
 
 ## Previous Phase
 
