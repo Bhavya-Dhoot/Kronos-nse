@@ -95,6 +95,15 @@ async def lifespan(app: FastAPI):
             app.state.mve = None
             app.state.mve_redis = None
 
+        # ── MVS history listener (D-10) ──────────────────────────────────────
+        _history_task: asyncio.Task | None = None
+        if app.state.mve_redis is not None:
+            try:
+                _history_task = asyncio.create_task(_variance_history_listener())
+                logger.info("MVS history listener started")
+            except Exception:
+                logger.exception("Failed to start MVS history listener")
+
         async def _refresh_loop():
             """Periodically fetch fresh Angel One data into TimescaleDB."""
             try:
@@ -129,6 +138,49 @@ async def lifespan(app: FastAPI):
             except asyncio.CancelledError:
                 pass
 
+        async def _variance_history_listener() -> None:
+            """Listen on mve:mvs:updates and persist to mve:mvs:history list.
+
+            Each MVS update is RPUSH-ed to the Redis list, then LTRIM-ed to 1000
+            entries. A 24-hour TTL is SETEX on every write (D-10).
+            """
+            mve_redis_local = getattr(app.state, "mve_redis", None)
+            if mve_redis_local is None:
+                logger.warning("MVE Redis not available — history listener disabled")
+                return
+            try:
+                pubsub = mve_redis_local.pubsub()
+                await pubsub.subscribe("mve:mvs:updates")
+                history_key = "mve:mvs:history"
+                while True:
+                    message = await pubsub.get_message(
+                        ignore_subscribe_messages=True, timeout=1.0
+                    )
+                    if not message or message.get("type") != "message":
+                        continue
+                    try:
+                        payload_str = message["data"]
+                        # Per D-10: RPUSH, LTRIM to 1000, set TTL 24h
+                        await mve_redis_local._client.rpush(
+                            history_key, payload_str
+                        )
+                        await mve_redis_local._client.ltrim(
+                            history_key, -1000, -1
+                        )
+                        await mve_redis_local._client.expire(
+                            history_key, 86400
+                        )
+                    except Exception:
+                        logger.exception("Failed to persist MVS history entry")
+            except Exception:
+                logger.exception("Variance history listener failed — disabling")
+            finally:
+                try:
+                    await pubsub.unsubscribe("mve:mvs:updates")
+                    await pubsub.aclose()
+                except Exception:
+                    pass
+
         if mode == "VISUAL":
             REFRESH_TASK = asyncio.create_task(_refresh_loop())
             logger.info("Background data refresh started")
@@ -140,6 +192,11 @@ async def lifespan(app: FastAPI):
         if REFRESH_TASK is not None:
             REFRESH_TASK.cancel()
             REFRESH_TASK = None
+
+        if _history_task is not None:
+            _history_task.cancel()
+            _history_task = None
+            logger.info("MVS history listener stopped")
 
         # ── MVE shutdown ─────────────────────────────────────────────────────
         mve_shutdown: MarketVarianceEngine | None = getattr(app.state, "mve", None)
