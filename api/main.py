@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api.helpers import dqg_report_to_response
-from api.routes import data_quality, model_info, modes, predictions, websocket
+from api.routes import data_quality, model_info, modes, predictions, variance as variance_routes, websocket
 from api.schemas import HealthResponse
 from data.quality.gate import DQGFailureError
 from model.factory import InferenceContext, build_inference_context, close_inference_context
@@ -210,6 +210,7 @@ def create_app(*, inference_override: InferenceContext | None = None) -> FastAPI
     app.include_router(model_info.router, prefix="/api/v1")
     app.include_router(modes.router, prefix="/api/v1")
     app.include_router(websocket.router)
+    app.include_router(variance_routes.router, prefix="/api/v1")
 
     return app
 
