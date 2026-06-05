@@ -120,5 +120,20 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Directional bias formula validated: shift_pct = bias * bias_scale * 0.01 | D-11: bar 0=1.0 scale, last bar=0.5 scale, verified with pytest.approx() | Done — 07-04 |
 | Band scaling formula validated: midpoint widen with mult | D-15: mid=(H+L)/2, new_H=mid+(H-mid)*mult, new_L=mid-(mid-L)*mult | Done — 07-04 |
 | Temperature cap at +0.3 verified | (VIX-15)*0.015 cap tested via make_mvs(temperature_adjustment=0.3) | Done — 07-04 |
+| React + TypeScript for MVS dashboard | D-01: richest ecosystem for financial charts | Done — 08-03 |
+| TradingView lightweight-charts for CandleChart | D-02: 2KB purpose-built financial charting | Done — 08-04 |
+| Arc gauge + right sidebar for MVS panel | D-04/D-05: semi-circular SVG gauge, sidebar layout | Done — 08-03 |
+| Background gradient tint on candles + FEAR/PANIC border+banner | D-07/D-08: lightweight-charts VerticalGradient, 2px red border | Done — 08-04 |
+| Compact DQG MVE row: dims/MVS/state/age | D-09: inline with existing DQG checks | Done — 08-04 |
+| Redis list mve:mvs:history capped 1000/TTL 24h | D-10: RPUSH+LTRIM pattern | Done — 08-02 |
+| WS typed mvs_update messages | D-11: {"type":"mvs_update","payload":{...}} | Done — 08-02 |
+| GET /api/v1/variance/score, /dimensions, /history | API-01/02/03: full MVS, per-dim, history endpoints | Done — 08-01 |
+| WS /ws/variance real-time pushes | API-04: ConnectionManager + Redis pub/sub | Done — 08-02 |
+| 13 integration tests (REST + WS) | API-01/02/03/04: score, dims, history, WS coverage | Done — 08-05 |
+| MarketVariancePanel with gauge, badge, bars, impact | UI-01: 5 React components in 320px sidebar | Done — 08-03 |
+| CandleChart MVS background tint | UI-02: lightweight-charts VerticalGradient | Done — 08-04 |
+| FEAR/PANIC red border + HIGH VOLATILITY banner | UI-03: 2px red border on chart container, sticky top banner | Done — 08-04 |
+| DQG panel MVE status row | UI-04: compact dims/MVS/state/age badge row | Done — 08-04 |
+| MVE initialized in all modes via lifespan | UI-05: handled by Phase 6 lifespan integration | Done — 06-03 |
 
-*Last updated: 2026-06-05 after Plan 07-04 execution*
+*Last updated: 2026-06-05 after Phase 8 completion*
