@@ -148,8 +148,8 @@ Success criteria:
 Plans:
 - [x] 06-01-PLAN.md — GlobalDimensionAggregator — Wave 1 ✓
 - [x] 06-02-PLAN.md — MarketVarianceEngine (core) — Wave 2 ✓
-- [ ] 06-03-PLAN.md — FastAPI lifespan + --standalone-mve integration — Wave 3
-- [ ] 06-04-PLAN.md — Aggregator + Engine tests — Wave 3
+- [x] 06-03-PLAN.md — FastAPI lifespan + --standalone-mve integration — Wave 3 ✓
+- [x] 06-04-PLAN.md — Aggregator + Engine tests — Wave 3 ✓
 ```
 Wave 2 ✅ *(completed 2026-06-04)*: Engine imports GlobalDimensionAggregator.
 Wave 3 *(blocked on Wave 2 completion)*: Integration and tests both need engine to exist; no file conflicts between them.
@@ -168,6 +168,15 @@ Success criteria:
 7. Integrated into KronosEngine.predict()
 8. HeadlessRunner uses mve_signal_threshold
 9. All 10 tests pass
+
+**Plans:** 4 plans (2 waves)
+```
+Plans:
+- [ ] 07-01-PLAN.md — PredictionModifier class (modify_pre_inference + post_inference) — Wave 1
+- [ ] 07-02-PLAN.md — KronosEngine integration (modifier injection + predict() hooks) — Wave 2
+- [ ] 07-03-PLAN.md — HeadlessRunner + API helpers (MVS signal_threshold + confidence) — Wave 2
+- [ ] 07-04-PLAN.md — Tests (10+ test cases for PredictionModifier) — Wave 2
+```
 
 **Phase 8: API & UI**
 Goal: Expose MVS through REST/WS API endpoints and build React MarketVariancePanel + update CandleChart for MVE visualization.
