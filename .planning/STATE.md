@@ -6,16 +6,25 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 
 **Core value:** Kronos predictions are no longer purely OHLCV-pattern based — they are contextually modified by real-time market variance signals so the system emits fewer false signals during high volatility and catches directional shifts earlier.
 
-**Current focus:** Phase 6 — MVE Orchestrator (Plan 02 ✅ 2026-06-04)
+**Current focus:** Phase 7 — PredictionModifier (In Progress 2026-06-05)
 
 ## Current Phase
 
+**Phase 7: PredictionModifier**
+- Requirements: MOD-01/02/03/04/05/06/07/08
+- Status: In Progress
+- Plans: 4 plans planned — 07-01 done, 07-02/03/04 pending
+- Last Activity: 2026-06-05 (Plan 01 committed)
+
+## Previous Phase
+
 **Phase 6: MVE Orchestrator**
 - Requirements: ENG-01/02/03/04/05/06/07
-- Status: In Progress (ENG-01/02/03/04/07 ✅, 06 pending)
-- Plans: 4 plans (06-01, 06-02, 06-03, 06-04) — Waves 1-2 done, Wave 3 pending
-- Last Activity: 2026-06-04 (MarketVarianceEngine done — 513 lines)
-- Key Deliverables: MarketVarianceEngine with lifecycle, market state machine (PRE_MARKET/MARKET_HOURS/POST_MARKET/GLOBAL_ONLY), collector management, MVS recompute pipeline, Redis publish, Prometheus 4-metric instrumentation
+- Status: Complete ✅
+- Plans: 4 plans (06-01, 06-02, 06-03, 06-04) — all executed
+- Last Activity: 2026-06-04 (all plans committed)
+- Tests: 41 Phase-6 tests passing
+- Key Deliverables: MarketVarianceEngine with lifecycle, market state machine (PRE_MARKET/MARKET_HOURS/POST_MARKET/GLOBAL_ONLY), collector management, MVS recompute pipeline, Redis publish, Prometheus 4-metric instrumentation, FastAPI lifespan integration, --standalone-mve CLI flag
 
 ## Previous Phase
 
@@ -35,8 +44,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | 3. Institutional Flow | Complete | FII-01–02, OIC-01–03 |
 | 4. GIFT Nifty | Complete | GFT-01–05 |
 | 5. Global & Macro | Complete | GLB-01–03, MAC-01–02 |
-| 6. Orchestrator | In Progress | ENG-01–07 (ENG-01/02/03/04/07 ✅) |
-| 7. PredictionModifier | Pending | MOD-01–08 |
+| 6. Orchestrator | Complete | ENG-01–07 |
+| 7. PredictionModifier | In Progress | MOD-01–08 |
 | 8. API & UI | Pending | API-01–04, UI-01–05 |
 | 9. DQG & System Test | Pending | DQG-01–05 |
 
@@ -74,4 +83,17 @@ See: `.planning/PROJECT.md` (updated 2026-06-04)
 | Ready gate: 3 of 6 sub-dimensions | D-11/D-12: any 3 suffices (vix, options, fii_dii, gift_nifty, global_markets, macro) | Done — 06-02 |
 | Prometheus: 4 gauges with collector labels | ENG-07/D-19: mve_composite_score, mve_vix_value, mve_collector_up, mve_mvs_age_seconds | Done — 06-02 |
 
-*Last updated: 2026-06-04 after Plan 06-02 execution*
+| MVE in lifespan after model_version, before mode-specific | Makes engine available in all modes via app.state.mve (D-16) | Done — 06-03 |
+| Engine failure isolated via try/except in lifespan | Prevents engine crash from taking down API (T-06-08) | Done — 06-03 |
+| engine.stop() in finally block | Prevents zombie engine on shutdown (T-06-09) | Done — 06-03 |
+| --standalone-mve + STANDALONE_MVE=1 | Dual activation for CLI and containers (D-17) | Done — 06-03 |
+| signal module imported inline in _run_standalone_mve | Keeps top-level imports unchanged | Done — 06-03 |
+| Config load failure → empty dict fallback | Graceful degradation if config file missing (T-06-11) | Done — 06-03 |
+| PredictionModifier with optional MVE injection | Default None = all mods disabled, defensive per T-07-02 | Done — 07-01 |
+| modify_pre_inference uses D-05: max(temp, 0.7+VIX adj) | Reads pre-computed temperature_adjustment from MVS dict | Done — 07-01 |
+| Post-inference order: bias→bands→constraints→confidence | Per D-18: pred_close shift first, then H/L bands, then OHLCV clamp | Done — 07-01 |
+| Directional bias only affects pred_close with linear decay | D-10/D-12: 1.0→0.5 decay, multiplicative shift per D-13 | Done — 07-01 |
+| OHLCV constraints after all modifications | D-17: high=max(high,O,C), low=min(low,O,C), volume>=0 | Done — 07-01 |
+| Confidence override sets mve_confidence flag, direction unchanged | D-19/D-21: PANIC/FEAR→LOW, only confidence not direction | Done — 07-01 |
+
+*Last updated: 2026-06-05 after Plan 07-01 execution*
