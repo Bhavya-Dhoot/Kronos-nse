@@ -13,7 +13,7 @@
 | 5 | Global & Macro | yfinance collectors for US/Asia/macro | GLB-01/02/03, MAC-01/02 | 7 tests passing; weighted scores correct |
 | 6 | Orchestrator | MarketVarianceEngine with async loops, hours-awareness, Redis pub | ENG-01/02/03/04/05/06/07 | Engine starts, polls all dims, publishes MVS |
 | 7 | PredictionModifier | 5 modification layers + KronosEngine integration | MOD-01/02/03/04/05/06/07/08 | 10 tests; OHLCV constraints verified |
-| 8 | API & UI | REST/WS endpoints + React MarketVariancePanel + chart MVE overlay | API-01/02/03/04, UI-01/02/03/04/05 | Endpoints return data; panel renders with live updates |
+| 8 | API & UI | REST/WS endpoints + React MarketVariancePanel + chart MVE overlay | API-01/02/03/04, UI-01/02/03/04/05 | 13 tests; endpoints return data; panel renders with live updates |
 | 9 | DQG & System Test | MVE health check, runtime config, history table, backtesting, integration tests | DQG-01/02/03/04/05 | All integration tests pass; full system test |
 
 ### Phase Details
@@ -182,24 +182,24 @@ Plans:
 Goal: Expose MVS through REST/WS API endpoints and build React MarketVariancePanel + update CandleChart for MVE visualization.
 Requirements: API-01, API-02, API-03, API-04, UI-01, UI-02, UI-03, UI-04, UI-05
 Success criteria:
-1. GET /api/v1/variance/score returns full MVS (204 if not ready)
-2. GET /api/v1/variance/dimensions/{name} returns per-dimension detail
-3. GET /api/v1/variance/history returns time-series data
-4. WS /ws/variance pushes real-time updates
-5. MarketVariancePanel: MVS gauge, market state badge, 5 dimension bars, impact summary
-6. CandleChart prediction overlay has MVS tint
-7. FEAR/PANIC states show red border + "HIGH VOLATILITY" banner
-8. DQG panel includes MVE health status
-9. main.py initializes MVE in all modes
+1. ✓ GET /api/v1/variance/score returns full MVS (204 if not ready)
+2. ✓ GET /api/v1/variance/dimensions/{name} returns per-dimension detail
+3. ✓ GET /api/v1/variance/history returns time-series data
+4. ✓ WS /ws/variance pushes real-time updates
+5. ✓ MarketVariancePanel: MVS gauge, market state badge, 5 dimension bars, impact summary
+6. ✓ CandleChart prediction overlay has MVS tint
+7. ✓ FEAR/PANIC states show red border + "HIGH VOLATILITY" banner
+8. ✓ DQG panel includes MVE health status
+9. ✓ main.py initializes MVE in all modes
 
 **Plans:** 5 plans (2 waves)
 ```
 Plans:
-- [ ] 08-01-PLAN.md — Variance REST API routes (score, dimensions/{name}, history) — Wave 1
-- [ ] 08-02-PLAN.md — WS /ws/variance + Redis history listener — Wave 2 (depends: 08-01)
-- [ ] 08-03-PLAN.md — React scaffold + MarketVariancePanel (gauge, bars, badge, impact) — Wave 1
-- [ ] 08-04-PLAN.md — CandleChart overlay + DQG MVE row + FEAR/PANIC UI — Wave 2 (depends: 08-03)
-- [ ] 08-05-PLAN.md — Integration tests + static UI serving — Wave 2 (depends: 08-01, 08-02)
+- [x] 08-01-PLAN.md — Variance REST API routes (score, dimensions/{name}, history) — Wave 1 ✓
+- [x] 08-02-PLAN.md — WS /ws/variance + Redis history listener — Wave 2 (depends: 08-01) ✓
+- [x] 08-03-PLAN.md — React scaffold + MarketVariancePanel (gauge, bars, badge, impact) — Wave 1 ✓
+- [x] 08-04-PLAN.md — CandleChart overlay + DQG MVE row + FEAR/PANIC UI — Wave 2 (depends: 08-03) ✓
+- [x] 08-05-PLAN.md — Integration tests + static UI serving — Wave 2 (depends: 08-01, 08-02) ✓
 ```
 
 Wave 1 *(parallel — backend + frontend)*:
