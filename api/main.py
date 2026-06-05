@@ -85,6 +85,7 @@ async def lifespan(app: FastAPI):
                 collectors=collectors,
                 redis_cache=redis,
                 config=variance_cfg,
+                timescale=ctx.db,  # Pass TimescaleClient for mve_history persistence (DQG-03)
             )
             await mve.start()
             app.state.mve = mve
