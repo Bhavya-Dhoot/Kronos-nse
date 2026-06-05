@@ -222,6 +222,26 @@ Success criteria:
 5. Full integration test: MVS cycle→fear state→degraded mode→engine injection
 6. All collectors poll successfully in live test
 7. Prediction modification verified with/without MVE
----
 
-*Created: 2026-06-04*
+**Plans:** 5 plans (3 waves)
+```
+Plans:
+- [ ] 09-01-PLAN.md — DQG MVE Health Check (check_mve_health() in checks.py + gate.py) — Wave 1
+- [ ] 09-02-PLAN.md — Config API + Engine Runtime Overlay (PATCH endpoint, engine config getter) — Wave 1
+- [ ] 09-03-PLAN.md — mve_history Hypertable + Dual Write (migration, TimescaleDB methods, engine replay) — Wave 2
+- [ ] 09-04-PLAN.md — Backtesting with MVE Comparison (CLI script, MAE/directional accuracy metrics) — Wave 1
+- [ ] 09-05-PLAN.md — Integration Tests (full lifecycle, fear state, degraded, modifier injection, health check) — Wave 3
+```
+
+Wave 1 *(parallel — no file conflicts)*:
+- 09-01 (DQG health check: checks.py, gate.py), 09-02 (Config API: variance_config.py, schemas.py, engine.py, main.py), and 09-04 (Backtesting: scripts/backtest_mve.py) have zero file overlap — can run in parallel.
+
+Wave 2 *(blocked on Wave 1 completion)*:
+- 09-03 depends on 09-02 (both modify engine.py — 09-02 adds runtime config overlay methods, 09-03 adds dual write + replay)
+
+Wave 3 *(blocked on both Wave 1 and 2)*:
+- 09-05 depends on all prior plans — tests verify check_mve_health, PATCH config, mve_history storage, and modifier-engine integration
+
+Cross-cutting constraints: All 5 plans share the MarketVarianceEngine class as the central integration point. check_mve_health() reads engine.health_status. PATCH config writes to engine._config_overlay. mve_history writes during engine._recompute_mvs(). Integration tests create engines with mocked collectors.
+
+---
