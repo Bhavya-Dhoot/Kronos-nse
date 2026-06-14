@@ -12,7 +12,6 @@ import pytest
 
 from variance.collectors.oi_collector import (
     OICollector,
-    TRACKED_SYMBOLS,
 )
 from variance.schemas import ParseResult
 
@@ -25,6 +24,7 @@ def collector() -> OICollector:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _oi_response(symbol: str, oi: float = 100000, ltp: float = 22000.0) -> dict:
     """Simulate AngelOneClient.get_futures_oi() response."""
@@ -46,8 +46,8 @@ def _empty_oi_response() -> dict:
 # TestFetch
 # ---------------------------------------------------------------------------
 
-class TestFetch:
 
+class TestFetch:
     @pytest.mark.asyncio
     @patch("variance.collectors.oi_collector._get_angel_client")
     async def test_fetch_calls_get_futures_oi_for_each_symbol(
@@ -55,10 +55,12 @@ class TestFetch:
     ):
         """fetch() should call get_futures_oi() for each tracked symbol."""
         mock_angel = MagicMock()
-        mock_angel.get_futures_oi = MagicMock(side_effect=[
-            _oi_response("NIFTY", 100000),
-            _oi_response("BANKNIFTY", 50000),
-        ])
+        mock_angel.get_futures_oi = MagicMock(
+            side_effect=[
+                _oi_response("NIFTY", 100000),
+                _oi_response("BANKNIFTY", 50000),
+            ]
+        )
         mock_get_angel.return_value = mock_angel
 
         result = await collector.fetch()
@@ -72,15 +74,15 @@ class TestFetch:
 
     @pytest.mark.asyncio
     @patch("variance.collectors.oi_collector._get_angel_client")
-    async def test_fetch_handles_api_error_per_symbol(
-        self, mock_get_angel, collector
-    ):
+    async def test_fetch_handles_api_error_per_symbol(self, mock_get_angel, collector):
         """fetch() should return empty dict for a symbol on error."""
         mock_angel = MagicMock()
-        mock_angel.get_futures_oi = MagicMock(side_effect=[
-            _oi_response("NIFTY", 100000),
-            Exception("API failure"),
-        ])
+        mock_angel.get_futures_oi = MagicMock(
+            side_effect=[
+                _oi_response("NIFTY", 100000),
+                Exception("API failure"),
+            ]
+        )
         mock_get_angel.return_value = mock_angel
 
         result = await collector.fetch()
@@ -93,8 +95,8 @@ class TestFetch:
 # TestParse
 # ---------------------------------------------------------------------------
 
-class TestParse:
 
+class TestParse:
     def test_parse_extracts_total_oi(self, collector):
         raw = {
             "NIFTY": _oi_response("NIFTY", 100000),
@@ -168,8 +170,8 @@ class TestParse:
 # TestScore
 # ---------------------------------------------------------------------------
 
-class TestScore:
 
+class TestScore:
     def test_score_zero_change(self, collector):
         parsed: ParseResult = {
             "raw_value": 0.0,
@@ -231,13 +233,16 @@ class TestScore:
         assert collector.score(parsed_buildup) == pytest.approx(0.3)
         assert collector.score(parsed_unwind) == pytest.approx(-0.3)
 
-    @pytest.mark.parametrize("change_pct,expected", [
-        (0.0, 0.0),
-        (1.0, 0.1),
-        (-1.0, -0.1),
-        (2.0, 0.2),
-        (-2.0, -0.2),
-    ])
+    @pytest.mark.parametrize(
+        "change_pct,expected",
+        [
+            (0.0, 0.0),
+            (1.0, 0.1),
+            (-1.0, -0.1),
+            (2.0, 0.2),
+            (-2.0, -0.2),
+        ],
+    )
     def test_score_linear_interpolation(self, collector, change_pct, expected):
         """Below 3%, score = change_pct / 10.0."""
         parsed: ParseResult = {
@@ -269,17 +274,19 @@ class TestScore:
 # TestPollWithBaseline
 # ---------------------------------------------------------------------------
 
-class TestPollWithBaseline:
 
+class TestPollWithBaseline:
     @pytest.mark.asyncio
     @patch("variance.collectors.oi_collector._get_angel_client")
     async def test_first_poll_returns_zero_change(self, mock_get_angel, collector):
         """First poll without baseline should return 0.0% change."""
         mock_angel = MagicMock()
-        mock_angel.get_futures_oi = MagicMock(side_effect=[
-            _oi_response("NIFTY", 100000),
-            _oi_response("BANKNIFTY", 50000),
-        ])
+        mock_angel.get_futures_oi = MagicMock(
+            side_effect=[
+                _oi_response("NIFTY", 100000),
+                _oi_response("BANKNIFTY", 50000),
+            ]
+        )
         mock_get_angel.return_value = mock_angel
 
         mock_redis = AsyncMock()
@@ -300,19 +307,26 @@ class TestPollWithBaseline:
         """Second poll with existing baseline should compute % change."""
         mock_angel = MagicMock()
         # First poll values
-        mock_angel.get_futures_oi = MagicMock(side_effect=[
-            _oi_response("NIFTY", 110000),
-            _oi_response("BANKNIFTY", 55000),
-        ])
+        mock_angel.get_futures_oi = MagicMock(
+            side_effect=[
+                _oi_response("NIFTY", 110000),
+                _oi_response("BANKNIFTY", 55000),
+            ]
+        )
         mock_get_angel.return_value = mock_angel
 
         mock_redis = AsyncMock()
         # Simulate previous baseline
-        mock_redis.get_mve = AsyncMock(side_effect=[
-            {"total_oi": 150000.0, "as_of": "2026-06-04T00:00:00Z"},  # baseline:total
-            None,  # baseline:NIFTY (no per-symbol baseline)
-            None,  # baseline:BANKNIFTY
-        ])
+        mock_redis.get_mve = AsyncMock(
+            side_effect=[
+                {
+                    "total_oi": 150000.0,
+                    "as_of": "2026-06-04T00:00:00Z",
+                },  # baseline:total
+                None,  # baseline:NIFTY (no per-symbol baseline)
+                None,  # baseline:BANKNIFTY
+            ]
+        )
 
         result = await collector.poll_with_baseline(mock_redis)
 
@@ -331,10 +345,12 @@ class TestPollWithBaseline:
     async def test_no_redis_returns_zero_change(self, mock_get_angel, collector):
         """poll_with_baseline with redis=None should return 0.0% change."""
         mock_angel = MagicMock()
-        mock_angel.get_futures_oi = MagicMock(side_effect=[
-            _oi_response("NIFTY", 100000),
-            _oi_response("BANKNIFTY", 50000),
-        ])
+        mock_angel.get_futures_oi = MagicMock(
+            side_effect=[
+                _oi_response("NIFTY", 100000),
+                _oi_response("BANKNIFTY", 50000),
+            ]
+        )
         mock_get_angel.return_value = mock_angel
 
         result = await collector.poll_with_baseline(None)

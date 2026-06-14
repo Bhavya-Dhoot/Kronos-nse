@@ -65,11 +65,11 @@ Kronos predictions are no longer purely OHLCV-pattern based — they are context
 
 #### MVE-7: MarketVarianceEngine Orchestrator
 
-- [ ] **ENG-01**: Implement `MarketVarianceEngine` — orchestrates all 5 dimension collectors in async loops
-- [ ] **ENG-02**: Build `_recompute_mvs()` with Redis publish + pub/sub for real-time updates
-- [ ] **ENG-03**: Implement market-hours aware scheduling (CLOSED/PRE_MARKET/MARKET_HOURS/POST_MARKET/GLOBAL_ONLY)
-- [ ] **ENG-04**: Implement startup behavior (immediate poll, 3-dimension ready gate, degraded mode)
-- [ ] **ENG-05**: Expose Prometheus metrics (mve_composite_score, mve_vix_value, collector health, MVS age)
+- [x] **ENG-01**: Implement `MarketVarianceEngine` — orchestrates all 5 dimension collectors in async loops (Phase 6)
+- [x] **ENG-02**: Build `_recompute_mvs()` with Redis publish + pub/sub for real-time updates (Phase 6)
+- [x] **ENG-03**: Implement market-hours aware scheduling (CLOSED/PRE_MARKET/MARKET_HOURS/POST_MARKET/GLOBAL_ONLY) (Phase 6)
+- [x] **ENG-04**: Implement startup behavior (immediate poll, 3-dimension ready gate, degraded mode) (Phase 6)
+- [x] **ENG-05**: Expose Prometheus metrics (mve_composite_score, mve_vix_value, collector health, MVS age) (Phase 6)
 
 #### MVE-8: PredictionModifier (The Integration Layer)
 

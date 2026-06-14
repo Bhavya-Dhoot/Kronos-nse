@@ -26,7 +26,6 @@ import yaml
 # Ensure project root is on sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backtest.runner import BacktestRunner
 from model.factory import build_inference_context, close_inference_context
 from variance.modifier import PredictionModifier
 
@@ -87,7 +86,7 @@ async def run_backtest(
         Summary of per-state metrics and per-symbol detail.
     """
     # Load config
-    with open(config_path) as f:
+    with open(config_path) as f:  # noqa: ASYNC230
         raw_cfg = yaml.safe_load(f)
 
     bt_cfg = raw_cfg.get("backtest", {})
@@ -103,7 +102,7 @@ async def run_backtest(
 
     # Create PredictionModifier WITHOUT MVE — we'll control MVS injection manually
     # per D-18: single prediction pass, then compare by applying modifier
-    modifier = PredictionModifier(mve=None)
+    PredictionModifier(mve=None)
 
     # Use a simple MVS dict for modification. This represents a moderate
     # bearish market state (~-0.3 composite, VIX=20)
@@ -196,9 +195,7 @@ async def run_backtest(
         unmodified_mae = compute_mae(
             actual_close, unmodified_result.get("pred_close", [])
         )
-        modified_mae = compute_mae(
-            actual_close, modified_result.get("pred_close", [])
-        )
+        modified_mae = compute_mae(actual_close, modified_result.get("pred_close", []))
 
         unmodified_dacc = compute_directional_accuracy(
             actual_close, unmodified_result.get("pred_close", [])
@@ -276,24 +273,20 @@ async def run_backtest(
                 else None
             ),
             "directional_accuracy": (
-                (
-                    _avg(all_modified["dacc"]) - _avg(all_unmodified["dacc"])
-                )
+                (_avg(all_modified["dacc"]) - _avg(all_unmodified["dacc"]))
                 if all_unmodified["dacc"] and all_modified["dacc"]
                 else None
             ),
         },
         "symbols_tested": len(results["symbols"]),
-        "total_bars": sum(
-            s["total_bars"] for s in results["symbols"].values()
-        ),
+        "total_bars": sum(s["total_bars"] for s in results["symbols"].values()),
     }
     results["summary"] = summary
 
     # Write output
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "mve_backtest_results.json")
-    with open(output_path, "w") as f:
+    with open(output_path, "w") as f:  # noqa: ASYNC230
         json.dump(results, f, indent=2, default=str)
 
     # ── Console output ─────────────────────────────────────────────────────
@@ -340,10 +333,8 @@ def _print_summary(summary: dict[str, Any]) -> None:
     print(f"  Symbols tested: {summary['symbols_tested']}")
     print(f"  Total bars:     {summary['total_bars']}")
     print()
-    print(
-        f"  {'Metric':<30} {'Unmodified':<14} {'Modified':<14} {'Diff':<10}"
-    )
-    print(f"  {'-'*30} {'-'*14} {'-'*14} {'-'*10}")
+    print(f"  {'Metric':<30} {'Unmodified':<14} {'Modified':<14} {'Diff':<10}")
+    print(f"  {'-' * 30} {'-' * 14} {'-' * 14} {'-' * 10}")
 
     def _fmt(val) -> str:
         if val is None:
@@ -367,17 +358,14 @@ def _print_summary(summary: dict[str, Any]) -> None:
 
     if d.get("mae") is not None:
         if d["mae"] < 0:
-            print(
-                f"  ✓ MVE improved MAE by {abs(d['mae']):.6f} "
-                "(lower is better)"
-            )
+            print(f"  ✓ MVE improved MAE by {abs(d['mae']):.6f} (lower is better)")
         elif d["mae"] > 0:
             print(f"  ⚠ MVE increased MAE by {d['mae']:.6f}")
         else:
             print("  ∼ MVE had no effect on MAE")
 
     print("=" * 70)
-    print(f"  Full results: backtest/output/mve_backtest_results.json")
+    print("  Full results: backtest/output/mve_backtest_results.json")
     print()
 
 
@@ -408,9 +396,7 @@ def main() -> None:
         default=5,
         help="Maximum symbols to test (default: 5)",
     )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable debug logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
     logging.basicConfig(

@@ -33,10 +33,11 @@ dependencies = [
     "safetensors>=0.4",
     "lightgbm>=4.3",
     "nse @ git+https://github.com/BennyThadikaran/NseIndiaApi.git",
-    "pandas-ta>=0.3.14b",
     "playwright>=1.40",
     "scrapling>=0.4.0",
     "yfinance>=0.2.40",
+    "textual>=1.0",
+    "rich>=13.0",
 ]
 
 
@@ -51,8 +52,14 @@ dev = [
     "ipykernel>=6.0",
 ]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
-packages = ["src/kronos_nse"]
+packages = ["."]
+
+[tool.hatch.build]
+include = ["kronos_nse*", "api/**", "data/**", "headless/**", "model/**", "training/**", "variance/**", "scripts/**"]
 
 [build-system]
 requires = ["hatchling"]
@@ -61,10 +68,9 @@ build-backend = "hatchling.build"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [".venv-linux", "checkpoints", "vendor", ".planning", ".opencode"]
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]
+# Ruff config consolidated in .ruff.toml
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -75,3 +81,4 @@ python_files = "test_*.py"
 python_version = "3.11"
 strict = false
 ignore_missing_imports = true
+explicit_package_bases = true

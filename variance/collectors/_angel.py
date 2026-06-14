@@ -17,27 +17,26 @@ except ImportError:  # pragma: no cover — tests mock this
 _logger = logging.getLogger(__name__)
 
 _angel_client: AngelOneClient | None = None
+_angel_refcount: int = 0
 _angel_config: dict[str, Any] | None = None
 
 
 def _set_angel_config(config: dict[str, Any]) -> None:
     """Inject Angel One configuration before first client instantiation.
 
-    Must be called during application startup. Raises RuntimeError if
-    the client has already been initialized.
+    Idempotent — safe to call multiple times from different paths.
     """
     global _angel_config
-    if _angel_client is not None:
-        raise RuntimeError(
-            "Cannot set Angel One config after client has been initialized"
-        )
-    _angel_config = dict(config)
-    _logger.info("Angel One configuration stored (%d keys)", len(config))
+    if _angel_config is None:
+        _angel_config = dict(config)
+        _logger.info("Angel One configuration stored (%d keys)", len(config))
+    else:
+        _angel_config.update(config)  # Merge new keys
 
 
 def _get_angel_client() -> AngelOneClient:
     """Return the shared AngelOneClient instance, lazy-initializing it on first call."""
-    global _angel_client
+    global _angel_client, _angel_refcount
     if AngelOneClient is None:
         raise ImportError(
             "AngelOneClient not available — check data.collector.angel_client dependencies"
@@ -49,4 +48,5 @@ def _get_angel_client() -> AngelOneClient:
             )
         _logger.info("Initializing shared AngelOneClient instance")
         _angel_client = AngelOneClient(_angel_config)
+    _angel_refcount += 1
     return _angel_client

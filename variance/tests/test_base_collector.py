@@ -6,9 +6,9 @@ No live API or Redis required.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -30,7 +30,7 @@ class MockCollector(BaseVarianceCollector):
             magnitude=0.5,
             detail={},
             source="mock",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:
@@ -43,7 +43,6 @@ def mock_collector() -> MockCollector:
 
 
 class TestABCInterface:
-
     def test_cannot_instantiate_abc(self):
         with pytest.raises(TypeError):
             BaseVarianceCollector("test")  # type: ignore
@@ -53,7 +52,6 @@ class TestABCInterface:
 
 
 class TestPollFlow:
-
     @pytest.mark.asyncio
     async def test_poll_calls_fetch_parse_score_in_order(self, mock_collector):
         fetch_mock = AsyncMock(return_value={"data": 42})
@@ -65,7 +63,7 @@ class TestPollFlow:
                 magnitude=0.5,
                 detail={},
                 source="mock",
-                as_of=datetime.now(timezone.utc).isoformat(),
+                as_of=datetime.now(UTC).isoformat(),
             )
         )
         score_mock = MagicMock(return_value=0.5)
@@ -86,7 +84,15 @@ class TestPollFlow:
     async def test_poll_returns_parse_result(self, mock_collector):
         result = await mock_collector.poll()
 
-        expected_keys = {"raw_value", "normalized", "direction", "magnitude", "detail", "source", "as_of"}
+        expected_keys = {
+            "raw_value",
+            "normalized",
+            "direction",
+            "magnitude",
+            "detail",
+            "source",
+            "as_of",
+        }
         assert expected_keys.issubset(result.keys())
         assert result["raw_value"] == 42.0
         assert result["normalized"] == 0.5
@@ -94,7 +100,6 @@ class TestPollFlow:
 
 
 class TestCircuitBreaker:
-
     @pytest.mark.asyncio
     async def test_trips_after_5_errors(self, mock_collector):
         mock_collector.fetch = AsyncMock(side_effect=Exception("API down"))
@@ -127,7 +132,6 @@ class TestCircuitBreaker:
 
 
 class TestStaleValues:
-
     @pytest.mark.asyncio
     async def test_stale_result_on_error_with_cache(self, mock_collector):
         await mock_collector.poll()
@@ -142,7 +146,6 @@ class TestStaleValues:
 
 
 class TestProperties:
-
     def test_is_available_default(self, mock_collector):
         assert mock_collector.is_available is True
 

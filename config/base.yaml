@@ -6,7 +6,36 @@ api:
   host: "${API_HOST:0.0.0.0}"
   port: ${API_PORT:8000}
   log_level: "${LOG_LEVEL:INFO}"
-  secret_key: "${SECRET_KEY:changeme}"
+  secret_key: "${SECRET_KEY}"
+  api_keys: []
+  rate_limit:
+    requests_per_minute: 60
+    burst: 10
+
+observability:
+  log_format: "json"  # json or text
+  log_level: "${LOG_LEVEL:INFO}"
+  metrics_enabled: true
+  metrics_port: 9090
+
+degradation:
+  mve_unavailable: "use_fixed_temperature"  # skip MVS modifications
+  redis_unavailable: "skip_cache"           # no caching, no pub/sub
+  db_unavailable: "return_503"              # hard fail
+
+features:
+  mve_enabled: true
+  headless_runner: false
+  tui_enabled: true
+  api_auth_enabled: true
+  api_rate_limit_enabled: true
+  structured_logging: true
+  metrics_endpoint: true
+  parallel_inference: true
+  adaptive_tui_refresh: true
+  synthetic_data_mode: false
+  conviction_tracking: true
+  vix_passthrough: true
 
 database:
   url: "${DATABASE_URL:postgresql://postgres:kronos@localhost:5432/kronos_nse}"
@@ -17,8 +46,9 @@ database:
 
 timescale:
   hypertable: "candles"
-  chunk_time_interval: "7 days"
+  chunk_time_interval: "1 day"
   compression_after: "7 days"
+  partitions: 4
 
 redis:
   url: "${REDIS_URL:redis://localhost:6379}"
@@ -37,6 +67,13 @@ model:
   max_sequence_length: 512
   default_sample_count: 2
   default_temperature: 0.7
+  max_parallel_inference: 2  # GPU concurrent predictions
+
+angel:
+  client_id: "${ANGEL_CLIENT_ID}"
+  api_key: "${ANGEL_API_KEY}"
+  password: "${ANGEL_PASSWORD}"
+  totp_secret: "${ANGEL_TOTP_SECRET}"
 
 registry:
   table_name: "model_registry"
@@ -79,6 +116,7 @@ data:
   market_close: "15:30"
   forward_fill_max_bars: 2
   universe: "NIFTY50"
+  synthetic_mode: false  # Use synthetic data when Angel One/NSE APIs unavailable
 
 collector:
   universe: "NIFTY50"

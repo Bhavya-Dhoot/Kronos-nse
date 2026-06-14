@@ -12,7 +12,6 @@ import pytest
 
 from variance.modifier import PredictionModifier
 
-
 # ── Test Helpers ──────────────────────────────────────────────────────────
 
 
@@ -45,13 +44,13 @@ def make_prediction(
     pred_open: list[float] | None = None,
 ) -> dict[str, Any]:
     """Build a prediction dict with sensible defaults (6 bars)."""
-    N = len(pred_close) if pred_close is not None else 6
+    nlen = len(pred_close) if pred_close is not None else 6
     return {
-        "pred_open": pred_open if pred_open is not None else [100.0] * N,
-        "pred_high": pred_high if pred_high is not None else [102.0] * N,
-        "pred_low": pred_low if pred_low is not None else [98.0] * N,
-        "pred_close": pred_close if pred_close is not None else [101.0] * N,
-        "pred_volume": [1000] * N,
+        "pred_open": pred_open if pred_open is not None else [100.0] * nlen,
+        "pred_high": pred_high if pred_high is not None else [102.0] * nlen,
+        "pred_low": pred_low if pred_low is not None else [98.0] * nlen,
+        "pred_close": pred_close if pred_close is not None else [101.0] * nlen,
+        "pred_volume": [1000] * nlen,
     }
 
 

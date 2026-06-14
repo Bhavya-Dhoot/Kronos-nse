@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 
-class AppMode(str, enum.Enum):
+class AppMode(enum.StrEnum):
     """Valid operating modes for Kronos NSE."""
 
     COLLECT = "COLLECT"
@@ -157,6 +157,7 @@ class CandleHistoryResponse(BaseModel):
     symbol: str
     timeframe: str
     candles: list[CandleBar] = Field(default_factory=list)
+    candle_data_age_seconds: float | None = None
 
 
 class DimensionScoreSchema(BaseModel):
@@ -219,6 +220,3 @@ class MveConfigResponse(BaseModel):
     poll_interval_seconds: dict[str, int] = Field(default_factory=dict)
     engine: dict[str, Any] = Field(default_factory=dict)
     mve_history: dict[str, Any] = Field(default_factory=dict)
-
-
-

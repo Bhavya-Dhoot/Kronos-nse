@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -12,6 +12,7 @@ from variance.schemas import DimensionScore
 
 class MarketState(Enum):
     """Market state classification based on VIX and composite score."""
+
     PANIC = "panic"
     FEAR = "fear"
     UNCERTAIN = "uncertain"
@@ -27,7 +28,7 @@ class MarketVarianceScore:
     composite: float
     market_state: MarketState
     vix_value: float | None = None
-    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     @classmethod
     def build(
@@ -55,6 +56,14 @@ class MarketVarianceScore:
 
     @staticmethod
     def _classify_state(vix: float | None, composite: float) -> MarketState:
+        if vix is not None and vix >= 28:
+            return MarketState.PANIC
+        if vix is not None and vix >= 22 and composite < -0.4:
+            return MarketState.FEAR
+        if vix is not None and vix < 14 and composite > 0.4:
+            return MarketState.BULL_RUN
+        if vix is not None and 14 <= vix <= 22 and -0.4 <= composite <= 0.4:
+            return MarketState.UNCERTAIN
         if vix is None:
             if composite > 0.4:
                 return MarketState.BULL_RUN
@@ -62,15 +71,6 @@ class MarketVarianceScore:
                 return MarketState.FEAR
             if -0.4 <= composite <= 0.4:
                 return MarketState.UNCERTAIN
-            return MarketState.NEUTRAL
-        if vix > 22 and composite < -0.4:
-            return MarketState.FEAR
-        if vix > 28:
-            return MarketState.PANIC
-        if vix < 14 and composite > 0.4:
-            return MarketState.BULL_RUN
-        if 14 <= vix <= 22 and -0.4 <= composite <= 0.4:
-            return MarketState.UNCERTAIN
         return MarketState.NEUTRAL
 
     @property
@@ -87,7 +87,7 @@ class MarketVarianceScore:
     def band_width_multiplier(self) -> float:
         if self.vix_value is None or self.vix_value <= 15:
             return 1.0
-        return 1.0 + (self.vix_value - 15) * 0.008
+        return min(1.0 + (self.vix_value - 15) * 0.008, 1.5)
 
     @property
     def signal_threshold(self) -> float:

@@ -5,13 +5,12 @@ No external dependencies required — all tests are pure math.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 
 import pytest
 
-from variance.score import MarketVarianceScore, MarketState
 from variance.schemas import DimensionScore
+from variance.score import MarketState, MarketVarianceScore
 
 
 def make_dim(
@@ -26,12 +25,11 @@ def make_dim(
         weight=weight,
         is_stale=is_stale,
         detail={},
-        collected_at=datetime.now(timezone.utc).isoformat(),
+        collected_at=datetime.now(UTC).isoformat(),
     )
 
 
 class TestCompositeWeighting:
-
     def test_weighted_composite_all_equal(self):
         dims = [
             make_dim("vix", 1.0),
@@ -74,40 +72,43 @@ class TestCompositeWeighting:
 
 
 class TestMarketStateClassification:
-
     def test_panic(self):
         mvs = MarketVarianceScore.build(
-            [make_dim("vix", -0.5)], vix_value=30.0,
+            [make_dim("vix", -0.5)],
+            vix_value=30.0,
         )
         assert mvs.market_state == MarketState.PANIC
 
     def test_fear(self):
         mvs = MarketVarianceScore.build(
-            [make_dim("vix", -0.5)], vix_value=23.0,
+            [make_dim("vix", -0.5)],
+            vix_value=23.0,
         )
         assert mvs.market_state == MarketState.FEAR
 
     def test_bull_run(self):
         mvs = MarketVarianceScore.build(
-            [make_dim("vix", 0.5)], vix_value=12.0,
+            [make_dim("vix", 0.5)],
+            vix_value=12.0,
         )
         assert mvs.market_state == MarketState.BULL_RUN
 
     def test_uncertain(self):
         mvs = MarketVarianceScore.build(
-            [make_dim("vix", 0.0)], vix_value=15.0,
+            [make_dim("vix", 0.0)],
+            vix_value=15.0,
         )
         assert mvs.market_state == MarketState.UNCERTAIN
 
     def test_neutral(self):
         mvs = MarketVarianceScore.build(
-            [make_dim("vix", 0.0)], vix_value=25.0,
+            [make_dim("vix", 0.0)],
+            vix_value=25.0,
         )
         assert mvs.market_state == MarketState.NEUTRAL
 
 
 class TestDerivedProperties:
-
     def test_temperature_adjustment(self):
         mvs_below = MarketVarianceScore.build([], vix_value=10.0)
         assert mvs_below.temperature_adjustment == 0.0
@@ -141,33 +142,37 @@ class TestDerivedProperties:
 
     def test_confidence_override(self):
         mvs_panic = MarketVarianceScore.build(
-            [make_dim("vix", -0.5)], vix_value=30.0,
+            [make_dim("vix", -0.5)],
+            vix_value=30.0,
         )
         assert mvs_panic.confidence_override == "LOW"
 
         mvs_fear = MarketVarianceScore.build(
-            [make_dim("vix", -0.5)], vix_value=23.0,
+            [make_dim("vix", -0.5)],
+            vix_value=23.0,
         )
         assert mvs_fear.confidence_override == "LOW"
 
         mvs_bull = MarketVarianceScore.build(
-            [make_dim("vix", 0.5)], vix_value=12.0,
+            [make_dim("vix", 0.5)],
+            vix_value=12.0,
         )
         assert mvs_bull.confidence_override is None
 
         mvs_uncertain_low = MarketVarianceScore.build(
-            [make_dim("vix", 0.3)], vix_value=18.0,
+            [make_dim("vix", 0.3)],
+            vix_value=18.0,
         )
         assert mvs_uncertain_low.confidence_override == "LOW"
 
         mvs_uncertain_high = MarketVarianceScore.build(
-            [make_dim("vix", 0.6)], vix_value=18.0,
+            [make_dim("vix", 0.6)],
+            vix_value=18.0,
         )
         assert mvs_uncertain_high.confidence_override is None
 
 
 class TestSerialization:
-
     def test_to_dict_returns_json_serializable(self):
         mvs = MarketVarianceScore.build(
             [make_dim("vix", -0.8, weight=0.25)],
@@ -175,6 +180,7 @@ class TestSerialization:
         )
         d = mvs.to_dict()
         import json
+
         dumped = json.dumps(d)
         assert isinstance(dumped, str)
         assert d["composite"] == pytest.approx(-0.8, rel=1e-5)
@@ -185,8 +191,15 @@ class TestSerialization:
         mvs = MarketVarianceScore.build([], vix_value=20.0)
         d = mvs.to_dict()
         expected_keys = {
-            "dimensions", "composite", "market_state", "vix_value",
-            "created_at", "temperature_adjustment", "directional_bias",
-            "band_width_multiplier", "signal_threshold", "confidence_override",
+            "dimensions",
+            "composite",
+            "market_state",
+            "vix_value",
+            "created_at",
+            "temperature_adjustment",
+            "directional_bias",
+            "band_width_multiplier",
+            "signal_threshold",
+            "confidence_override",
         }
         assert expected_keys.issubset(d.keys())

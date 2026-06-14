@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from data.quality.gate import DQGReport, DQGStatus
 from api.schemas import CheckResult, DQGReportResponse, PredictionResponse
+from data.quality.gate import DQGReport, DQGStatus
 
 
 def resolve_universe(name: str) -> list[str]:
@@ -27,18 +27,29 @@ def compute_confidence(
     pred_close: list[float],
     last_close: float | None,
     mve_confidence: str | None = None,
+    atr_pct: float | None = None,
 ) -> str:
     """Classify confidence from expected move magnitude.
 
     If ``mve_confidence`` is provided (from MVS confidence_override
     per D-20), return it directly instead of computing.  Falls back to
     computed confidence when override is not set.
+
+    When ``atr_pct`` is provided, thresholds are relative to volatility:
+    ``>= 1.5× ATR`` → HIGH, ``>= 0.5× ATR`` → MEDIUM.
+    Otherwise uses absolute thresholds (1% / 0.3%).
     """
     if mve_confidence is not None:
         return mve_confidence
     if not pred_close or not last_close:
         return "LOW"
     move_pct = abs(float(pred_close[-1]) - last_close) / last_close * 100
+    if atr_pct is not None and atr_pct > 0:
+        if move_pct >= 1.5 * atr_pct:
+            return "HIGH"
+        if move_pct >= 0.5 * atr_pct:
+            return "MEDIUM"
+        return "LOW"
     if move_pct >= 1.0:
         return "HIGH"
     if move_pct >= 0.3:
@@ -77,7 +88,9 @@ def dqg_report_to_response(report: DQGReport) -> DQGReportResponse:
     return DQGReportResponse(
         symbol=report.symbol,
         timeframe=report.timeframe,
-        status=report.status.value if isinstance(report.status, DQGStatus) else str(report.status),
+        status=report.status.value
+        if isinstance(report.status, DQGStatus)
+        else str(report.status),
         checks=checks_to_schema(report.checks),
         coverage_pct=float(report.coverage_pct or 0.0),
         days_collected=int(report.days_collected),
@@ -110,6 +123,7 @@ def engine_result_to_prediction(
     data_coverage: float = 0.0,
     last_close: float | None = None,
     data_age_seconds: float | None = None,
+    atr_pct: float | None = None,
 ) -> PredictionResponse:
     """Map KronosEngine result dict to PredictionResponse."""
     pred_close = [float(x) for x in result.get("pred_close", [])]
@@ -127,18 +141,18 @@ def engine_result_to_prediction(
         pred_low=[float(x) for x in result.get("pred_low", [])],
         pred_close=pred_close,
         pred_volume=[float(x) for x in result.get("pred_volume", [])],
-        timestamps=list(result.get("pred_timestamps") or result.get("timestamps") or []),
+        timestamps=list(
+            result.get("pred_timestamps") or result.get("timestamps") or []
+        ),
         dqg_status=dqg_status,
         data_coverage=data_coverage,
         confidence=compute_confidence(
             pred_close,
             last_close,
             mve_confidence=result.get("mve_confidence"),
+            atr_pct=atr_pct,
         ),
         latency_ms=result.get("latency_ms"),
         cached=result.get("cached", False),
         data_age_seconds=data_age_seconds,
     )
-
-
-

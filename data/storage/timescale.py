@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import asyncpg
@@ -17,6 +17,20 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 _IST = "Asia/Kolkata"
+
+_SYMBOL_ALIASES: dict[str, str] = {
+    "NIFTY 50": "NIFTY50",
+    "NIFTY": "NIFTY50",
+    "BANK NIFTY": "BANKNIFTY",
+    "BANKNIFTY": "BANKNIFTY",
+}
+
+
+def _normalize_symbol(symbol: str) -> str:
+    upper = symbol.upper().strip()
+    return _SYMBOL_ALIASES.get(upper, upper)
+
+
 _BULK_BATCH = 1000
 
 
@@ -37,9 +51,11 @@ class TimescaleClient:
             self._dsn,
             min_size=self._min_size,
             max_size=self._max_size,
-            command_timeout=30,
+            command_timeout=120,
         )
-        logger.info("TimescaleDB pool created (min=%d, max=%d)", self._min_size, self._max_size)
+        logger.info(
+            "TimescaleDB pool created (min=%d, max=%d)", self._min_size, self._max_size
+        )
 
         if migrations_dir:
             await self._run_migrations(migrations_dir)
@@ -50,19 +66,32 @@ class TimescaleClient:
             await self._pool.close()
             self._pool = None
 
+    async def __aenter__(self) -> TimescaleClient:
+        await self.initialize()
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        await self.close()
+
+    async def run_migrations(self, migrations_dir: str) -> None:
+        """Public wrapper to apply SQL migrations against this client's pool."""
+        await self._run_migrations(migrations_dir)
+
     async def _run_migrations(self, migrations_dir: str) -> None:
         """Execute all .sql files in migrations_dir in lexicographic order."""
         import os
 
-        files = sorted(
-            f for f in os.listdir(migrations_dir) if f.endswith(".sql")
-        )
+        files = sorted(f for f in os.listdir(migrations_dir) if f.endswith(".sql"))
         async with self._pool.acquire() as conn:
             for fname in files:
                 path = os.path.join(migrations_dir, fname)
-                with open(path, encoding="utf-8") as fh:
+                with open(path, encoding="utf-8") as fh:  # noqa: ASYNC230
                     sql = fh.read()
-                await conn.execute(sql)
+                for stmt in sql.split(";"):
+                    stmt = stmt.strip()
+                    if not stmt:
+                        continue
+                    await conn.execute(stmt + ";", timeout=120)
                 logger.info("Migration applied: %s", fname)
 
     # ── candles ──────────────────────────────────────────────────────────────
@@ -82,13 +111,14 @@ class TimescaleClient:
         """
         assert self._pool, "call initialize() first"
 
-        # Query base hypertable; continuous aggregates may lag until refreshed.
+        symbol = _normalize_symbol(symbol)
+
         table = "candles"
         tf_filter = "timeframe = $2"
         params: list[Any] = [symbol, timeframe]
 
         param_idx = len(params) + 1
-        where_clauses = [f"symbol = $1"]
+        where_clauses = ["symbol = $1"]
         if tf_filter:
             where_clauses.append(tf_filter)
 
@@ -104,6 +134,7 @@ class TimescaleClient:
         where_sql = " AND ".join(where_clauses)
         params.append(limit)
 
+        # Force index scan to avoid decompressing every compressed chunk
         query = f"""
             SELECT time, open, high, low, close, volume
             FROM {table}
@@ -118,7 +149,9 @@ class TimescaleClient:
         if not rows:
             return pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
 
-        df = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close", "volume"])
+        df = pd.DataFrame(
+            rows, columns=["time", "open", "high", "low", "close", "volume"]
+        )
         df["time"] = pd.to_datetime(df["time"], utc=True).dt.tz_convert(_IST)
         df = df.set_index("time").sort_index()
         return df
@@ -146,9 +179,14 @@ class TimescaleClient:
 
         def _row(c: dict[str, Any]) -> tuple:
             return (
-                c["time"], c["symbol"], c["timeframe"],
-                float(c["open"]), float(c["high"]), float(c["low"]),
-                float(c["close"]), max(float(c.get("volume", 0)), 0.0),
+                c["time"],
+                c["symbol"],
+                c["timeframe"],
+                float(c["open"]),
+                float(c["high"]),
+                float(c["low"]),
+                float(c["close"]),
+                max(float(c.get("volume", 0)), 0.0),
                 bool(c.get("is_adjusted", False)),
                 str(c.get("source", "angel_one")),
             )
@@ -167,7 +205,10 @@ class TimescaleClient:
                     failed_batches += 1
                     logger.warning(
                         "bulk_insert_candles: batch %d/%d failed (%d rows): %s",
-                        i + 1, batches, len(rows), exc,
+                        i + 1,
+                        batches,
+                        len(rows),
+                        exc,
                     )
                     # Fall back to row-by-row insert for this batch
                     for row in rows:
@@ -175,13 +216,22 @@ class TimescaleClient:
                             await conn.execute(sql, *row)
                             total += 1
                         except Exception:
-                            pass  # skip individual bad rows silently
-                logger.debug("bulk_insert_candles: batch %d/%d (%d rows)", i + 1, batches, len(rows))
+                            logger.debug(
+                                "Skipped bad row in bulk_insert_candles", exc_info=True
+                            )
+                logger.debug(
+                    "bulk_insert_candles: batch %d/%d (%d rows)",
+                    i + 1,
+                    batches,
+                    len(rows),
+                )
 
         if failed_batches:
             logger.warning(
                 "bulk_insert_candles: %d/%d batches had errors (inserted %d total)",
-                failed_batches, batches, total,
+                failed_batches,
+                batches,
+                total,
             )
         return total
 
@@ -229,7 +279,7 @@ class TimescaleClient:
                 list(prediction.get("pred_volume", [])),
                 list(prediction.get("pred_timestamps", [])),
                 prediction["model_version"],
-                prediction.get("generated_at", datetime.utcnow()),
+                prediction.get("generated_at", datetime.now(UTC)),
             )
         return int(row_id)
 
@@ -318,7 +368,9 @@ class TimescaleClient:
             rows = await conn.fetch(query, symbol, str(days))
 
         if not rows:
-            return pd.DataFrame(columns=["generated_at", "mae", "directional_acc", "model_version"])
+            return pd.DataFrame(
+                columns=["generated_at", "mae", "directional_acc", "model_version"]
+            )
         return pd.DataFrame([dict(r) for r in rows])
 
     async def store_signal(self, signal: dict[str, Any]) -> int:
@@ -485,7 +537,9 @@ class TimescaleClient:
             The MVS dict from MarketVarianceScore.to_dict().
         """
         if self._pool is None:
-            logger.warning("TimescaleDB pool not available — skipping mve_history insert")
+            logger.warning(
+                "TimescaleDB pool not available — skipping mve_history insert"
+            )
             return
 
         import json
@@ -512,17 +566,22 @@ class TimescaleClient:
 
         try:
             async with self._pool.acquire() as conn:
+                created_at = mvs_dict.get("created_at")
+                if isinstance(created_at, str):
+                    created_at = datetime.fromisoformat(created_at)
                 await conn.execute(
                     sql,
-                    mvs_dict.get("created_at"),           # time
-                    mvs_dict["composite"],                 # composite
-                    mvs_dict["market_state"],               # market_state
-                    mvs_dict.get("vix_value"),              # vix_value
-                    json.dumps(pruned),                    # dimensions
-                    mvs_dict.get("temperature_adjustment", 0.0),    # temperature_adjustment
-                    mvs_dict.get("directional_bias", 0.0),          # directional_bias
-                    mvs_dict.get("band_width_multiplier", 1.0),     # band_width_multiplier
-                    mvs_dict.get("signal_threshold", 0.005),        # signal_threshold
+                    created_at,  # time
+                    mvs_dict["composite"],  # composite
+                    mvs_dict["market_state"],  # market_state
+                    mvs_dict.get("vix_value"),  # vix_value
+                    json.dumps(pruned),  # dimensions
+                    mvs_dict.get(
+                        "temperature_adjustment", 0.0
+                    ),  # temperature_adjustment
+                    mvs_dict.get("directional_bias", 0.0),  # directional_bias
+                    mvs_dict.get("band_width_multiplier", 1.0),  # band_width_multiplier
+                    mvs_dict.get("signal_threshold", 0.005),  # signal_threshold
                 )
         except Exception:
             logger.exception("Failed to insert mve_history entry")
@@ -567,17 +626,23 @@ class TimescaleClient:
                 dims_raw = row["dimensions"]
                 if isinstance(dims_raw, str):
                     dims_raw = json.loads(dims_raw)
-                entries.append({
-                    "composite": float(row["composite"]),
-                    "market_state": str(row["market_state"]),
-                    "vix_value": float(row["vix_value"]) if row["vix_value"] is not None else None,
-                    "created_at": row["time"].isoformat() if hasattr(row["time"], "isoformat") else str(row["time"]),
-                    "dimensions": dims_raw if isinstance(dims_raw, list) else [],
-                    "temperature_adjustment": float(row["temperature_adjustment"]),
-                    "directional_bias": float(row["directional_bias"]),
-                    "band_width_multiplier": float(row["band_width_multiplier"]),
-                    "signal_threshold": float(row["signal_threshold"]),
-                })
+                entries.append(
+                    {
+                        "composite": float(row["composite"]),
+                        "market_state": str(row["market_state"]),
+                        "vix_value": float(row["vix_value"])
+                        if row["vix_value"] is not None
+                        else None,
+                        "created_at": row["time"].isoformat()
+                        if hasattr(row["time"], "isoformat")
+                        else str(row["time"]),
+                        "dimensions": dims_raw if isinstance(dims_raw, list) else [],
+                        "temperature_adjustment": float(row["temperature_adjustment"]),
+                        "directional_bias": float(row["directional_bias"]),
+                        "band_width_multiplier": float(row["band_width_multiplier"]),
+                        "signal_threshold": float(row["signal_threshold"]),
+                    }
+                )
 
             # Return in chronological order for replay
             return list(reversed(entries))

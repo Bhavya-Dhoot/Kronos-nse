@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from copy import deepcopy
-from datetime import datetime, timezone
-from typing import Any, AsyncIterator
+from datetime import UTC, datetime
+from typing import Any
 
 from variance.schemas import ParseResult
 
@@ -61,9 +62,9 @@ class BaseVarianceCollector(ABC):
             parsed = self.parse(raw)
             score_val = self.score(parsed)
             parsed["normalized"] = score_val
-            parsed["as_of"] = datetime.now(timezone.utc).isoformat()
+            parsed["as_of"] = datetime.now(UTC).isoformat()
             self._last_successful_result = deepcopy(parsed)
-            self._last_poll_time = datetime.now(timezone.utc)
+            self._last_poll_time = datetime.now(UTC)
             self._consecutive_errors = 0
             return parsed
         except Exception:
@@ -77,7 +78,7 @@ class BaseVarianceCollector(ABC):
             )
             if self._last_successful_result is not None:
                 stale = deepcopy(self._last_successful_result)
-                stale["as_of"] = datetime.now(timezone.utc).isoformat()
+                stale["as_of"] = datetime.now(UTC).isoformat()
                 return stale
             raise
 

@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
+from api.conviction import ConvictionTracker
 from data.quality.gate import DataQualityGate
 from data.storage.redis_cache import RedisCache
 from data.storage.timescale import TimescaleClient
@@ -14,6 +15,17 @@ from model.engine import KronosEngine
 from model.factory import InferenceContext
 from model.registry import ModelRegistry
 from variance.engine import MarketVarianceEngine
+
+
+def get_conviction_tracker(request: Request) -> ConvictionTracker:
+    """Return the conviction tracker from app.state, creating if needed."""
+    tracker = getattr(request.app.state, "conviction_tracker", None)
+    if tracker is None:
+        from api.conviction import ConvictionTracker
+
+        tracker = ConvictionTracker()
+        request.app.state.conviction_tracker = tracker
+    return tracker
 
 
 def get_inference_context(request: Request) -> InferenceContext:
@@ -79,6 +91,3 @@ def get_mve_engine(request: Request) -> MarketVarianceEngine | None:
 def get_mve_redis(request: Request) -> RedisCache | None:
     """Return the MVE RedisCache from lifespan state, or None."""
     return getattr(request.app.state, "mve_redis", None)
-
-
-

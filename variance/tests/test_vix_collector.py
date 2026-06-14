@@ -27,9 +27,10 @@ def _mock_indices(vix_value: float) -> list[dict]:
 
 
 class TestFetch:
-
     @pytest.mark.asyncio
-    @patch("variance.collectors.vix_collector._fetch_all_indices", new_callable=AsyncMock)
+    @patch(
+        "variance.collectors.vix_collector._fetch_all_indices", new_callable=AsyncMock
+    )
     async def test_fetch_calls_nse_api(self, mock_fetch, collector):
         mock_fetch.return_value = _mock_indices(15.0)
         result = await collector.fetch()
@@ -39,7 +40,6 @@ class TestFetch:
 
 
 class TestParse:
-
     def test_parse_extracts_vix_value(self, collector):
         raw = _mock_indices(15.2)
         result = collector.parse(raw)
@@ -59,22 +59,27 @@ class TestParse:
 
 
 class TestScore:
-
-    @pytest.mark.parametrize("vix,expected", [
-        (30.0, -1.0),
-        (20.0, -0.3),
-        (15.0, 0.0),
-        (10.0, 0.8),
-    ])
+    @pytest.mark.parametrize(
+        "vix,expected",
+        [
+            (30.0, -1.0),
+            (20.0, -0.3),
+            (15.0, 0.0),
+            (10.0, 0.8),
+        ],
+    )
     def test_anchor_points(self, collector, vix, expected):
         parsed = collector.parse(_mock_indices(vix))
         score = collector.score(parsed)
         assert score == pytest.approx(expected, abs=0.01)
 
-    @pytest.mark.parametrize("vix,expected", [
-        (5.0, 0.8),
-        (40.0, -1.0),
-    ])
+    @pytest.mark.parametrize(
+        "vix,expected",
+        [
+            (5.0, 0.8),
+            (40.0, -1.0),
+        ],
+    )
     def test_clamping(self, collector, vix, expected):
         parsed = collector.parse(_mock_indices(vix))
         score = collector.score(parsed)
@@ -98,9 +103,10 @@ class TestScore:
 
 
 class TestIntegration:
-
     @pytest.mark.asyncio
-    @patch("variance.collectors.vix_collector._fetch_all_indices", new_callable=AsyncMock)
+    @patch(
+        "variance.collectors.vix_collector._fetch_all_indices", new_callable=AsyncMock
+    )
     async def test_poll_returns_parse_result_with_score(self, mock_fetch, collector):
         mock_fetch.return_value = _mock_indices(20.0)
         result = await collector.poll()

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pyotp
@@ -29,7 +29,10 @@ EXCHANGE_NSE = "NSE"
 EXCHANGE_NFO = "NFO"
 
 
-from data.collector.rate_limiter import get_shared_historical_rate_limiter
+from data.collector.rate_limiter import (
+    get_shared_historical_rate_limiter,
+    get_shared_ltp_rate_limiter,
+)
 
 
 class AngelOneClient:
@@ -77,10 +80,12 @@ class AngelOneClient:
 
         self._smart = SmartConnect(api_key=self.api_key) if SmartConnect else None
         self._ws = None
+        self._ws_thread = None
         self._session_data: dict[str, Any] | None = None
         self.jwt_token: str | None = None
         self._jwt_expiry_utc: datetime | None = None
         self._rate_limiter = get_shared_historical_rate_limiter()
+        self._ltp_rate_limiter = get_shared_ltp_rate_limiter()
 
     @classmethod
     def resolve_interval(cls, interval: str) -> str:
@@ -115,7 +120,7 @@ class AngelOneClient:
             payload = data.get("data") or {}
             self.jwt_token = payload.get("jwtToken")
             self._session_data = payload
-            self._jwt_expiry_utc = datetime.now(timezone.utc) + timedelta(hours=24)
+            self._jwt_expiry_utc = datetime.now(UTC) + timedelta(hours=24)
             return True
         except Exception:
             logger.exception("Angel authentication failed")
@@ -123,8 +128,10 @@ class AngelOneClient:
 
     def _refresh_session_if_needed(self) -> None:
         """Refresh session when nearing expiry (<1 hour)."""
-        now = datetime.now(timezone.utc)
-        if self._jwt_expiry_utc is None or now >= (self._jwt_expiry_utc - timedelta(hours=1)):
+        now = datetime.now(UTC)
+        if self._jwt_expiry_utc is None or now >= (
+            self._jwt_expiry_utc - timedelta(hours=1)
+        ):
             self.authenticate()
 
     def get_historical(
@@ -189,13 +196,18 @@ class AngelOneClient:
     def _tf_minutes(interval: str) -> int:
         tf = interval.strip().lower()
         # Angel constants: ONE_MINUTE, THREE_MINUTE, FIVE_MINUTE, etc.
-        _ANGEL = {
-            "one_minute": 1, "three_minute": 3, "five_minute": 5,
-            "ten_minute": 10, "fifteen_minute": 15, "thirty_minute": 30,
-            "one_hour": 60, "one_day": 1440,
+        _angel_map = {
+            "one_minute": 1,
+            "three_minute": 3,
+            "five_minute": 5,
+            "ten_minute": 10,
+            "fifteen_minute": 15,
+            "thirty_minute": 30,
+            "one_hour": 60,
+            "one_day": 1440,
         }
-        if tf in _ANGEL:
-            return _ANGEL[tf]
+        if tf in _angel_map:
+            return _angel_map[tf]
         if tf.endswith("min"):
             return int(tf[:-3])
         if tf.endswith("m"):
@@ -314,8 +326,13 @@ class AngelOneClient:
         for idx, (c_from, c_to) in enumerate(chunks):
             logger.info(
                 "chunk %d/%d token=%s %s..%s (chunk_days=%d, depth=%d)",
-                idx + 1, total_chunks, symbol_token,
-                c_from.date(), c_to.date(), chunk_days, _depth,
+                idx + 1,
+                total_chunks,
+                symbol_token,
+                c_from.date(),
+                c_to.date(),
+                chunk_days,
+                _depth,
             )
             rows = self.get_historical(symbol_token, exchange, interval, c_from, c_to)
 
@@ -323,15 +340,21 @@ class AngelOneClient:
             if (
                 _depth < self.MAX_RECURSION_DEPTH
                 and chunk_days > 5
-                and self._suspect_truncation(interval=interval, c_from=c_from, c_to=c_to, rows=rows)
+                and self._suspect_truncation(
+                    interval=interval, c_from=c_from, c_to=c_to, rows=rows
+                )
             ):
                 smaller = max(5, chunk_days // 2)
                 logger.warning(
                     "Suspected truncation token=%s interval=%s chunk=%s..%s "
                     "(rows=%d, depth=%d). Retrying with %d-day chunks.",
-                    symbol_token, interval,
-                    c_from.date(), c_to.date(),
-                    len(rows), _depth, smaller,
+                    symbol_token,
+                    interval,
+                    c_from.date(),
+                    c_to.date(),
+                    len(rows),
+                    _depth,
+                    smaller,
                 )
                 sub_rows = self.get_historical_chunked(
                     symbol_token=symbol_token,
@@ -343,15 +366,17 @@ class AngelOneClient:
                     _depth=_depth + 1,
                 )
                 rows = sub_rows
-            elif (
-                _depth >= self.MAX_RECURSION_DEPTH
-                and self._suspect_truncation(interval=interval, c_from=c_from, c_to=c_to, rows=rows)
+            elif _depth >= self.MAX_RECURSION_DEPTH and self._suspect_truncation(
+                interval=interval, c_from=c_from, c_to=c_to, rows=rows
             ):
                 logger.warning(
                     "Max recursion depth (%d) reached for token=%s chunk=%s..%s. "
                     "Accepting %d rows as-is.",
-                    self.MAX_RECURSION_DEPTH, symbol_token,
-                    c_from.date(), c_to.date(), len(rows),
+                    self.MAX_RECURSION_DEPTH,
+                    symbol_token,
+                    c_from.date(),
+                    c_to.date(),
+                    len(rows),
                 )
 
             for row in rows:
@@ -362,7 +387,10 @@ class AngelOneClient:
             if (idx + 1) % 5 == 0 or idx + 1 == total_chunks:
                 logger.info(
                     "Progress: token=%s %d/%d chunks done, %d total rows so far",
-                    symbol_token, idx + 1, total_chunks, len(all_rows),
+                    symbol_token,
+                    idx + 1,
+                    total_chunks,
+                    len(all_rows),
                 )
 
         return [all_rows[k] for k in sorted(all_rows.keys())]
@@ -373,26 +401,46 @@ class AngelOneClient:
         on_tick_callback,
         on_error_callback,
     ) -> None:
-        """Start websocket streaming in mode 3 (full snap quote)."""
+        """Start websocket streaming in mode 3 (full snap quote) using SmartWebSocketV2."""
         self._refresh_session_if_needed()
         if self._smart is None:
             on_error_callback(RuntimeError("SmartConnect unavailable"))
             return
         try:
+            from SmartApi.smartWebSocketV2 import SmartWebSocketV2
+
             if self._ws and hasattr(self._ws, "close_connection"):
                 self._ws.close_connection()
-            self._ws = getattr(self._smart, "ws", None) or getattr(self._smart, "websocket", None)
-            if self._ws is None:
-                raise RuntimeError("Smart WebSocket client not available")
 
-            if hasattr(self._ws, "on_data"):
-                self._ws.on_data = on_tick_callback
-            if hasattr(self._ws, "on_error"):
-                self._ws.on_error = on_error_callback
-            if hasattr(self._ws, "subscribe"):
-                self._ws.subscribe(tokens_list, mode=3)
-            if hasattr(self._ws, "connect"):
-                self._ws.connect()
+            auth_token = self.jwt_token or ""
+            api_key = self.api_key or ""
+            client_code = self.client_id or ""
+            session = self._session_data or {}
+            feed_token = session.get("feedToken", "")
+
+            ws = SmartWebSocketV2(auth_token, api_key, client_code, feed_token)
+
+            def _on_data(wsapp, msg):
+                if callable(on_tick_callback):
+                    on_tick_callback(msg)
+
+            def _on_open(wsapp):
+                ws.subscribe("1", 3, tokens_list)
+
+            ws.on_data = _on_data
+            ws.on_open = _on_open
+            ws.on_error = lambda *a: (
+                on_error_callback(RuntimeError("SmartWebSocket error"))
+                if callable(on_error_callback)
+                else None
+            )
+
+            import threading as _threading
+
+            self._ws_reconnect_attempt = getattr(self, "_ws_reconnect_attempt", 0) + 1
+            self._ws_thread = _threading.Thread(target=ws.connect, daemon=True)
+            self._ws_thread.start()
+            self._ws = ws
         except Exception as exc:
             on_error_callback(exc)
 
@@ -417,7 +465,8 @@ class AngelOneClient:
         if self._smart is None:
             return {}
         try:
-            if hasattr(self._smart, 'ltpData'):
+            if hasattr(self._smart, "ltpData"):
+                self._ltp_rate_limiter.acquire()
                 exchange = "NFO"
                 trading_symbol = self._build_futures_symbol(symbol)
                 resp = self._smart.ltpData(exchange, trading_symbol, "")
@@ -425,7 +474,8 @@ class AngelOneClient:
                     data = resp.get("data", {}) or {}
                     return {
                         "symbol": symbol,
-                        "open_interest": data.get("openInterest", 0) or data.get("oi", 0),
+                        "open_interest": data.get("openInterest", 0)
+                        or data.get("oi", 0),
                         "ltp": data.get("ltp", 0) or data.get("lastPrice", 0),
                         "change": data.get("change", 0),
                         "source": "angel_ltp",
@@ -435,8 +485,107 @@ class AngelOneClient:
             return {}
 
     def _build_futures_symbol(self, symbol: str) -> str:
-        """Build the Angel One futures trading symbol."""
-        return f"{symbol}FUT"
+        """Build the Angel One futures trading symbol with near-month expiry.
+
+        Caches the token map from scrip master on first call (client lifetime).
+        On failure, retries up to 3 times with 2s backoff. Cached to a temp file
+        so it survives client restarts within the same day.
+        If the scrip master download permanently fails, returns fallback symbol
+        and retries on the next call (does NOT cache the failure).
+        Format: {SYMBOL}{DD}{MON}{YY}FUT e.g. NIFTY30JUN26FUT
+        """
+        if not hasattr(self, "_futures_cache"):
+            cache = self._load_scrip_master()
+            # Only cache a non-None result — a failed download gets retried
+            # on the next call instead of poisoning the cache forever.
+            self._futures_cache = cache if cache is not None else None
+        if self._futures_cache is None:
+            return f"{symbol}FUT"
+        entry = self._futures_cache.get(symbol)
+        if entry is None:
+            logger.warning("No near-month futures contract found for %s", symbol)
+            return f"{symbol}FUT"
+        return entry
+
+    def _load_scrip_master(self) -> dict[str, str] | None:
+        """Download and parse scrip master, with retries and file cache.
+
+        Returns the parsed symbol→expiry mapping dict, or None if all
+        3 download attempts failed. None means "retry on next call".
+        """
+        import json
+        import os
+        import tempfile
+
+        _cache_path = os.path.join(tempfile.gettempdir(), "kronos_scrip_master.json")
+        cache: dict[str, str] = {}
+
+        # Try file cache first
+        try:
+            if os.path.exists(_cache_path):
+                age = time.time() - os.path.getmtime(_cache_path)
+                if age < 86400:  # 24-hour cache lifetime
+                    with open(_cache_path) as f:
+                        cached = json.load(f)
+                    if isinstance(cached, dict):
+                        logger.info(
+                            "Loaded %d NFO futures symbols from file cache", len(cached)
+                        )
+                        return cached
+        except Exception:
+            pass
+
+        # Download with retries
+        import urllib.request
+
+        url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(url, timeout=10) as resp:
+                    data = json.loads(resp.read().decode())
+                today = datetime.now(UTC).date()
+                for item in data:
+                    if (
+                        item.get("exch_seg") != "NFO"
+                        or item.get("instrumenttype") != "FUTIDX"
+                    ):
+                        continue
+                    sym = item.get("symbol", "")
+                    if not sym.endswith("FUT"):
+                        continue
+                    expiry_str = item.get("expiry", "")
+                    try:
+                        expiry = datetime.strptime(expiry_str, "%d%b%Y").date()
+                    except (ValueError, TypeError):
+                        continue
+                    if expiry < today:
+                        continue
+                    base = sym[:-9]
+                    if base not in cache:
+                        cache[base] = sym
+                logger.info(
+                    "Loaded %d NFO futures symbols from scrip master", len(cache)
+                )
+
+                # Write file cache
+                try:
+                    with open(_cache_path, "w") as f:
+                        json.dump(cache, f)
+                except Exception:
+                    pass
+                return cache
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Scrip master download attempt %d/3 failed: %s", attempt + 1, exc
+                )
+                if attempt < 2:
+                    time.sleep(2.0)
+
+        logger.error("Failed to load scrip master after 3 attempts: %s", last_error)
+        return None  # Signal caller to NOT cache this result
+        return cache
 
     def get_previous_close(
         self,
@@ -449,7 +598,7 @@ class AngelOneClient:
         Per D-03: default token for NIFTY 50 = "99926000", exchange = "NSE".
         Per D-05: returns None on error (never raises).
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Yesterday's date in IST
         yesterday = now - timedelta(days=1)
         from_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)

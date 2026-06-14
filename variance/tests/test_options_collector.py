@@ -19,8 +19,11 @@ def collector() -> OptionsCollector:
 
 
 def _make_option(
-    strike: float, ce_oi: float, pe_oi: float,
-    ce_iv: float | None = 0.12, pe_iv: float | None = 0.14,
+    strike: float,
+    ce_oi: float,
+    pe_oi: float,
+    ce_iv: float | None = 0.12,
+    pe_iv: float | None = 0.14,
 ) -> dict:
     entry: dict = {"strikePrice": strike}
     ce: dict = {"openInterest": ce_oi}
@@ -47,14 +50,19 @@ def _mock_option_chain(
             (18400, 350000, 200000, 0.16, 0.19),
             (18500, 200000, 150000, 0.17, 0.20),
         ]
-    data = [_make_option(s, ce_oi, pe_oi, ce_iv, pe_iv) for s, ce_oi, pe_oi, ce_iv, pe_iv in strikes]
+    data = [
+        _make_option(s, ce_oi, pe_oi, ce_iv, pe_iv)
+        for s, ce_oi, pe_oi, ce_iv, pe_iv in strikes
+    ]
     return {"records": {"data": data, "underlyingValue": underlying}}
 
 
 class TestFetch:
-
     @pytest.mark.asyncio
-    @patch("variance.collectors.options_collector._fetch_option_chain", new_callable=AsyncMock)
+    @patch(
+        "variance.collectors.options_collector._fetch_option_chain",
+        new_callable=AsyncMock,
+    )
     async def test_fetch_calls_nse_api(self, mock_fetch, collector):
         mock_fetch.return_value = _mock_option_chain()
         result = await collector.fetch()
@@ -63,7 +71,6 @@ class TestFetch:
 
 
 class TestParse:
-
     def test_parse_computes_pcr(self, collector):
         raw = _mock_option_chain()
         result = collector.parse(raw)
@@ -107,8 +114,14 @@ class TestParse:
         result = collector.parse(raw)
         detail = result["detail"]
         expected_keys = {
-            "pcr", "max_pain", "underlying_value", "iv_ce", "iv_pe",
-            "oi_concentration", "spot_vs_max_pain_pct", "strike_count",
+            "pcr",
+            "max_pain",
+            "underlying_value",
+            "iv_ce",
+            "iv_pe",
+            "oi_concentration",
+            "spot_vs_max_pain_pct",
+            "strike_count",
         }
         assert expected_keys.issubset(detail.keys())
         assert detail["strike_count"] == 6
@@ -129,7 +142,6 @@ class TestParse:
 
 
 class TestScore:
-
     def test_pcr_1p0_is_neutral_with_pin(self, collector):
         strikes = [
             (18000, 100, 100, 0.15, 0.18),
@@ -176,9 +188,11 @@ class TestScore:
 
 
 class TestIntegration:
-
     @pytest.mark.asyncio
-    @patch("variance.collectors.options_collector._fetch_option_chain", new_callable=AsyncMock)
+    @patch(
+        "variance.collectors.options_collector._fetch_option_chain",
+        new_callable=AsyncMock,
+    )
     async def test_poll_returns_parse_result_with_score(self, mock_fetch, collector):
         mock_fetch.return_value = _mock_option_chain(underlying=18200.0)
         result = await collector.poll()

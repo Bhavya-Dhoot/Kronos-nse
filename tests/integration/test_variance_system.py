@@ -9,20 +9,15 @@ Async integration tests (not TestClient) per D-23.
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import prometheus_client
 import pytest
 
-import prometheus_client
-
-import data.quality.checks  # noqa: F811  # ensure check_mve_health importable
 from data.quality.checks import check_mve_health
-from variance.engine import MarketVarianceEngine, ScoreEntry
+from variance.engine import MarketVarianceEngine
 from variance.modifier import PredictionModifier
-from variance.schemas import DimensionScore
-
 
 # ── Mock helpers ──────────────────────────────────────────────────────────────
 
@@ -117,14 +112,23 @@ class MockTimescale:
 def mock_collectors() -> dict[str, MagicMock]:
     """Create a full set of 7 mocked collectors, all healthy."""
     return {
-        "vix": _make_mock_collector("vix", poll_interval=1, score=-0.15, poll_result={
-            "normalized": -0.15, "raw_value": 15.0, "detail": {},
-        }),
+        "vix": _make_mock_collector(
+            "vix",
+            poll_interval=1,
+            score=-0.15,
+            poll_result={
+                "normalized": -0.15,
+                "raw_value": 15.0,
+                "detail": {},
+            },
+        ),
         "options": _make_mock_collector("options", poll_interval=1, score=0.42),
         "fii_dii": _make_mock_collector("fii_dii", poll_interval=1, score=0.55),
         "oi": _make_mock_collector("oi", poll_interval=1, score=-0.22),
         "gift_nifty": _make_mock_collector("gift_nifty", poll_interval=1, score=0.18),
-        "global_markets": _make_mock_collector("global_markets", poll_interval=1, score=0.30),
+        "global_markets": _make_mock_collector(
+            "global_markets", poll_interval=1, score=0.30
+        ),
         "macro": _make_mock_collector("macro", poll_interval=1, score=-0.10),
     }
 
@@ -164,6 +168,9 @@ def base_config() -> dict:
         "mve_history": {
             "retention_days": 30,
         },
+        "degradation": {
+            "redis_unavailable": "fail",  # Don't skip Redis in tests
+        },
     }
 
 
@@ -177,7 +184,7 @@ def sample_prediction() -> dict:
         "pred_low": [19400.0],
         "pred_close": [19550.0],
         "pred_volume": [100000.0],
-        "pred_timestamps": [datetime.now(timezone.utc).isoformat()],
+        "pred_timestamps": [datetime.now(UTC).isoformat()],
         "temperature": 0.7,
         "confidence": "MEDIUM",
     }
@@ -201,9 +208,7 @@ def _reset_prometheus_registry() -> None:
     registry = prometheus_client.REGISTRY
     # Collect MVE-specific names (copied to avoid mutation during iteration)
     mve_names = [
-        name
-        for name in registry._names_to_collectors
-        if name.startswith("mve_")
+        name for name in registry._names_to_collectors if name.startswith("mve_")
     ]
     if not mve_names:
         yield
@@ -251,11 +256,14 @@ class TestMVELifecycle:
         )
 
         # Inject first dimension and verify state stored correctly
-        await engine._on_dimension_update("vix", {
-            "normalized": -0.2,
-            "raw_value": 18.0,
-            "detail": {},
-        })
+        await engine._on_dimension_update(
+            "vix",
+            {
+                "normalized": -0.2,
+                "raw_value": 18.0,
+                "detail": {},
+            },
+        )
         assert "vix" in engine._scores
         assert engine._scores["vix"]["score"] == -0.2
         assert engine._raw_vix == 18.0
@@ -265,11 +273,14 @@ class TestMVELifecycle:
 
         # Add 2 more dimensions to trigger ready gate (3 needed per D-11)
         for name, score in [("options", 0.3), ("fii_dii", 0.5)]:
-            await engine._on_dimension_update(name, {
-                "normalized": score,
-                "raw_value": None,
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": score,
+                    "raw_value": None,
+                    "detail": {},
+                },
+            )
 
         assert engine.is_ready is True  # 3 dimensions = ready
         assert engine.last_mvs is not None
@@ -305,25 +316,32 @@ class TestMVELifecycle:
         }
 
         for name, score in fear_scores.items():
-            await engine._on_dimension_update(name, {
-                "normalized": score,
-                "raw_value": 25.0 if name == "vix" else None,
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": score,
+                    "raw_value": 25.0 if name == "vix" else None,
+                    "detail": {},
+                },
+            )
 
         assert engine.is_ready is True
         assert engine.last_mvs is not None
         mvs = engine.last_mvs
 
         # Verify fear state — should be at least FEAR with VIX=25
-        assert mvs["market_state"] in ("fear", "panic"), \
+        assert mvs["market_state"] in ("fear", "panic"), (
             f"Expected fear/panic state, got {mvs['market_state']}"
+        )
 
         # signal_threshold should be elevated above base
         # base: 0.005, VIX=25 → signal_threshold = 0.005 + (25-15)*0.0002 = 0.007
         expected_threshold = 0.005 + (25 - 15) * 0.0002
-        assert mvs["signal_threshold"] == pytest.approx(expected_threshold, abs=0.001), \
+        assert mvs["signal_threshold"] == pytest.approx(
+            expected_threshold, abs=0.001
+        ), (
             f"Expected signal_threshold ~{expected_threshold}, got {mvs['signal_threshold']}"
+        )
 
     async def test_degraded_mode_continues_serving_last_mvs(
         self, mock_redis, base_config
@@ -343,11 +361,14 @@ class TestMVELifecycle:
 
         # First, inject 3+ dimensions so a good MVS is computed and stored
         for name, score in [("vix", -0.1), ("options", 0.3), ("fii_dii", 0.5)]:
-            await engine._on_dimension_update(name, {
-                "normalized": score,
-                "raw_value": 15.0 if name == "vix" else None,
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": score,
+                    "raw_value": 15.0 if name == "vix" else None,
+                    "detail": {},
+                },
+            )
 
         assert engine.is_ready is True
         assert engine.last_mvs is not None
@@ -358,11 +379,14 @@ class TestMVELifecycle:
         engine._scores.clear()
 
         # Inject just 1 dimension — triggers degraded check (< 3 dims, > 30s)
-        await engine._on_dimension_update("vix", {
-            "normalized": 0.0,
-            "raw_value": 15.0,
-            "detail": {},
-        })
+        await engine._on_dimension_update(
+            "vix",
+            {
+                "normalized": 0.0,
+                "raw_value": 15.0,
+                "detail": {},
+            },
+        )
 
         # Verify degraded state
         # Note: is_ready is one-way (never reverts once 3+ dims polled per D-11).
@@ -393,11 +417,14 @@ class TestMVELifecycle:
         # Inject enough dimensions for MVS computation
         for name in ["vix", "options", "fii_dii", "gift_nifty", "global_markets"]:
             coll = mock_collectors[name]
-            await engine._on_dimension_update(name, {
-                "normalized": coll.poll.return_value["normalized"],
-                "raw_value": coll.poll.return_value["raw_value"],
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": coll.poll.return_value["normalized"],
+                    "raw_value": coll.poll.return_value["raw_value"],
+                    "detail": {},
+                },
+            )
 
         assert engine.is_ready is True
         assert engine.last_mvs is not None
@@ -434,11 +461,14 @@ class TestMVELifecycle:
         # ── Test healthy state ──────────────────────────────────────────────
         # Inject 3+ dimensions
         for name in ["vix", "options", "fii_dii"]:
-            await engine._on_dimension_update(name, {
-                "normalized": 0.1,
-                "raw_value": 15.0 if name == "vix" else None,
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": 0.1,
+                    "raw_value": 15.0 if name == "vix" else None,
+                    "detail": {},
+                },
+            )
 
         health = check_mve_health(engine)
         assert health["passed"] is True
@@ -482,22 +512,27 @@ class TestMVELifecycle:
         # Inject dimensions to trigger MVS computation
         for name in ["vix", "options", "fii_dii", "oi", "gift_nifty"]:
             coll = mock_collectors[name]
-            await engine._on_dimension_update(name, {
-                "normalized": coll.poll.return_value["normalized"],
-                "raw_value": coll.poll.return_value["raw_value"],
-                "detail": {},
-            })
+            await engine._on_dimension_update(
+                name,
+                {
+                    "normalized": coll.poll.return_value["normalized"],
+                    "raw_value": coll.poll.return_value["raw_value"],
+                    "detail": {},
+                },
+            )
 
         # Verify Redis publish was called (tracked by MockRedis.publish_calls)
-        assert len(mock_redis.publish_calls) > 0, \
+        assert len(mock_redis.publish_calls) > 0, (
             "Expected at least one Redis publish_mvs call"
+        )
         last_redis = mock_redis.publish_calls[-1]
         assert "composite" in last_redis
         assert "market_state" in last_redis
 
         # Verify mock TimescaleDB received entries
-        assert len(mock_timescale.entries) > 0, \
+        assert len(mock_timescale.entries) > 0, (
             "Expected at least one TimescaleDB insert"
+        )
         last_entry = mock_timescale.entries[-1]
         assert "composite" in last_entry
         assert "market_state" in last_entry

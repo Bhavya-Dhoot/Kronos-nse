@@ -13,6 +13,7 @@ dist/
 htmlcov/
 
 checkpoints/
+vendor/
 *.pkl
 *.pt
 *.bin

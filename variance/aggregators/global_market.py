@@ -6,7 +6,7 @@ Per D-06: Combined weight in MVS = 0.30 (sum of gift_nifty 0.15 + global_macro 0
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.schemas import DimensionScore
@@ -97,5 +97,5 @@ class GlobalDimensionAggregator:
             weight=GLOBAL_MARKET_COMBINED_WEIGHT,
             is_stale=is_stale,
             detail=detail,
-            collected_at=datetime.now(timezone.utc).isoformat(),
+            collected_at=datetime.now(UTC).isoformat(),
         )

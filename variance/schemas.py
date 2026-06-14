@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 
 class ParseResult(TypedDict, total=False):
     """Standardized output from a collector's parse() method."""
+
     raw_value: float
     normalized: float
     direction: int
@@ -18,6 +19,7 @@ class ParseResult(TypedDict, total=False):
 
 class DimensionScore(TypedDict, total=False):
     """Individual dimension score for MarketVarianceScore."""
+
     name: str
     score: float
     weight: float

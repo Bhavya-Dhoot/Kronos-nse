@@ -26,7 +26,9 @@ def _validate_config_update(update: VarianceConfigUpdate) -> list[str]:
     if update.weights is not None:
         for name, weight in update.weights.items():
             if not isinstance(weight, (int, float)) or weight <= 0:
-                errors.append(f"weights.{name}: must be a positive number, got {weight}")
+                errors.append(
+                    f"weights.{name}: must be a positive number, got {weight}"
+                )
             elif weight > 1.0:
                 errors.append(f"weights.{name}: must be <= 1.0, got {weight}")
 
@@ -43,9 +45,19 @@ def _validate_config_update(update: VarianceConfigUpdate) -> list[str]:
                     errors.append(
                         f"modification.{key}: must be a non-negative number, got {value}"
                     )
-            if key == "temperature_cap" and isinstance(value, (int, float)) and value > 1.0:
-                errors.append(f"modification.temperature_cap: must be <= 1.0, got {value}")
-            if key in ("vix_baseline",) and isinstance(value, (int, float)) and value < 0:
+            if (
+                key == "temperature_cap"
+                and isinstance(value, (int, float))
+                and value > 1.0
+            ):
+                errors.append(
+                    f"modification.temperature_cap: must be <= 1.0, got {value}"
+                )
+            if (
+                key in ("vix_baseline",)
+                and isinstance(value, (int, float))
+                and value < 0
+            ):
                 errors.append(f"modification.{key}: must be non-negative, got {value}")
 
     if update.poll_interval_seconds is not None:

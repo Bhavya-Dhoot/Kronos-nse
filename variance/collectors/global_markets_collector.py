@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import yfinance as yf
@@ -58,11 +58,12 @@ class GlobalMarketsCollector(BaseVarianceCollector):
         super().__init__(name="global_markets", poll_interval=300)
 
     async def fetch(self) -> dict[str, float | None]:
-        """Fetch change_pct for all tickers concurrently via to_thread."""
+        """Fetch change_pct for all tickers via to_thread with 0.25s inter-request delay."""
         results: dict[str, float | None] = {}
         for ticker in GLOBAL_TICKERS:
             result = await asyncio.to_thread(_compute_change_pct, ticker)
             results[ticker] = result
+            await asyncio.sleep(0.25)  # Rate-limit: max 4 req/s for yfinance
         return results
 
     def parse(self, raw: dict[str, float | None]) -> ParseResult:
@@ -96,11 +97,13 @@ class GlobalMarketsCollector(BaseVarianceCollector):
             magnitude=min(1.0, abs(composite)),
             detail={
                 "tickers": ticker_details,
-                "included_count": sum(1 for d in ticker_details.values() if d["included"]),
+                "included_count": sum(
+                    1 for d in ticker_details.values() if d["included"]
+                ),
                 "total_tickers": len(GLOBAL_TICKERS),
             },
             source="yfinance",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:

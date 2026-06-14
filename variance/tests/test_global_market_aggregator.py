@@ -22,7 +22,6 @@ def _drop_collected_at(result: dict) -> dict:
 
 
 class TestGlobalDimensionAggregator:
-
     def test_combines_both_scores(self):
         """GIFT 0.5 + Global 0.3 = (0.5*0.5 + 0.3*0.5) / 1.0 = 0.4"""
         agg = GlobalDimensionAggregator()
@@ -87,8 +86,10 @@ class TestGlobalDimensionAggregator:
         """Detail dict includes all expected fields."""
         agg = GlobalDimensionAggregator()
         result = agg.compute(
-            gift_score=0.5, global_score=0.3,
-            gift_stale=True, global_stale=False,
+            gift_score=0.5,
+            global_score=0.3,
+            gift_stale=True,
+            global_stale=False,
         )
         detail = result["detail"]
         assert "gift_score" in detail
@@ -105,22 +106,28 @@ class TestGlobalDimensionAggregator:
         """Stale flags reflected in detail and is_stale."""
         agg = GlobalDimensionAggregator()
         result = agg.compute(
-            gift_score=0.5, global_score=0.3,
-            gift_stale=True, global_stale=False,
+            gift_score=0.5,
+            global_score=0.3,
+            gift_stale=True,
+            global_stale=False,
         )
         assert result["is_stale"] is True
         assert result["detail"]["gift_stale"] is True
         assert result["detail"]["global_stale"] is False
 
         result2 = agg.compute(
-            gift_score=0.5, global_score=0.3,
-            gift_stale=False, global_stale=True,
+            gift_score=0.5,
+            global_score=0.3,
+            gift_stale=False,
+            global_stale=True,
         )
         assert result2["is_stale"] is True
 
         result3 = agg.compute(
-            gift_score=0.5, global_score=0.3,
-            gift_stale=False, global_stale=False,
+            gift_score=0.5,
+            global_score=0.3,
+            gift_stale=False,
+            global_stale=False,
         )
         assert result3["is_stale"] is False
 
@@ -130,10 +137,9 @@ class TestGlobalDimensionAggregator:
         result = agg.compute(gift_score=0.5, global_score=0.3)
         assert "collected_at" in result
         assert "T" in result["collected_at"]
-        assert (
-            result["collected_at"].endswith("+00:00")
-            or result["collected_at"].endswith("Z")
-        )
+        assert result["collected_at"].endswith("+00:00") or result[
+            "collected_at"
+        ].endswith("Z")
 
     def test_score_rounded_to_4_places(self):
         """Score rounded to 4 decimal places."""
@@ -151,13 +157,16 @@ class TestGlobalDimensionAggregator:
         assert result["score"] == 0.0
         assert result["is_stale"] is True
 
-    @pytest.mark.parametrize("gift,global_,expected", [
-        (0.5, 0.5, 0.5),
-        (1.0, -0.5, 0.25),
-        (-0.3, 0.1, -0.1),
-        (0.0, 1.0, 0.5),
-        (-0.8, -0.2, -0.5),
-    ])
+    @pytest.mark.parametrize(
+        "gift,global_,expected",
+        [
+            (0.5, 0.5, 0.5),
+            (1.0, -0.5, 0.25),
+            (-0.3, 0.1, -0.1),
+            (0.0, 1.0, 0.5),
+            (-0.8, -0.2, -0.5),
+        ],
+    )
     def test_parametrized_combinations(self, gift, global_, expected):
         """Various combinations produce correct weighted averages."""
         agg = GlobalDimensionAggregator()

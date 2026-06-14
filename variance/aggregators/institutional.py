@@ -8,7 +8,7 @@ The aggregator applies the configured weighting:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.schemas import DimensionScore
@@ -99,5 +99,5 @@ class InstitutionalDimensionAggregator:
             weight=INSTITUTIONAL_WEIGHT,
             is_stale=is_stale,
             detail=detail,
-            collected_at=datetime.now(timezone.utc).isoformat(),
+            collected_at=datetime.now(UTC).isoformat(),
         )

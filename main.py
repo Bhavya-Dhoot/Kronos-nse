@@ -8,21 +8,26 @@ import enum
 import logging
 import os
 import sys
-
-from api.main import app as fastapi_app
+from typing import Any
 
 import yaml
+
 from data.storage.redis_cache import RedisCache
 from variance.collectors import (
-    FIIDIICollector, GIFTNiftyCollector, GlobalMarketsCollector,
-    MacroCollector, OICollector, OptionsCollector, VIXCollector,
+    FIIDIICollector,
+    GIFTNiftyCollector,
+    GlobalMarketsCollector,
+    MacroCollector,
+    OICollector,
+    OptionsCollector,
+    VIXCollector,
 )
 from variance.engine import MarketVarianceEngine
 
 logger = logging.getLogger(__name__)
 
 
-class AppMode(str, enum.Enum):
+class AppMode(enum.StrEnum):
     COLLECT = "COLLECT"
     BACKTEST = "BACKTEST"
     VISUAL = "VISUAL"
@@ -95,7 +100,11 @@ async def _run_standalone_mve(variance_cfg: dict[str, Any]) -> None:
             pass
 
     await engine.start()
-    logger.info("Standalone MVE running (ready=%s, degraded=%s)", engine.is_ready, engine.is_degraded)
+    logger.info(
+        "Standalone MVE running (ready=%s, degraded=%s)",
+        engine.is_ready,
+        engine.is_degraded,
+    )
 
     try:
         await shutdown_event.wait()
@@ -137,7 +146,10 @@ def main() -> None:
         os.environ["BOOTSTRAP"] = "true"
 
     # ── Standalone MVE mode (COLLECT/HEADLESS, no API) per D-17 ──────
-    standalone_mve = args.standalone_mve or os.getenv("STANDALONE_MVE", "").lower() in ("1", "true")
+    standalone_mve = args.standalone_mve or os.getenv("STANDALONE_MVE", "").lower() in (
+        "1",
+        "true",
+    )
     if standalone_mve:
         logger = logging.getLogger(__name__)
         mode = get_mode()
@@ -157,9 +169,6 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info("Shutdown requested")
         sys.exit(0)
-
-
-app = fastapi_app
 
 
 if __name__ == "__main__":

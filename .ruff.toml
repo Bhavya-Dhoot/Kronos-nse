@@ -4,6 +4,9 @@ ignore = ["E501"]
 
 [lint.per-file-ignores]
 "tests/**" = ["S101"]
+"scripts/*.py" = ["E402"]
+"scripts/**/*.py" = ["E402"]
+"data/collector/angel_client.py" = ["E402"]
 
 [format]
 quote-style = "double"

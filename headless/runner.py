@@ -74,17 +74,19 @@ class HeadlessRunner:
         self._symbols = symbols
         self._timeframe = timeframe
         self._running = True
+        self._next_close = 0.0
         logger.info("HeadlessRunner started: %d symbols, %s", len(symbols), timeframe)
 
         while self._running:
-            next_close = self._get_next_candle_time(timeframe)
-            if time.time() >= next_close:
+            now = time.time()
+            if now >= self._next_close:
                 boundary = self._boundary_key(timeframe)
                 if boundary != self._last_processed_boundary:
                     self._last_processed_boundary = boundary
                     await self._on_candle_close(symbols, timeframe)
                     if self._watchdog is not None:
                         self._watchdog.heartbeat()
+                self._next_close = self._get_next_candle_time(timeframe)
             await asyncio.sleep(0.1)
 
     async def stop(self) -> None:
@@ -105,7 +107,9 @@ class HeadlessRunner:
                 mvs = getattr(mve, "last_mvs", None) or {}
                 return float(mvs.get("signal_threshold", 0.005))
         except Exception:
-            logger.debug("Failed to read MVS signal_threshold, using default", exc_info=True)
+            logger.debug(
+                "Failed to read MVS signal_threshold, using default", exc_info=True
+            )
         return 0.005
 
     def _get_mvs_confidence_override(self) -> str | None:
@@ -149,7 +153,10 @@ class HeadlessRunner:
 
         contexts: dict[str, dict[str, Any]] = {}
         last_closes: dict[str, float] = {}
-        build_tasks = [self._context_builder.build(sym, timeframe, "HEADLESS") for sym in valid_symbols]
+        build_tasks = [
+            self._context_builder.build(sym, timeframe, "HEADLESS")
+            for sym in valid_symbols
+        ]
         built = await asyncio.gather(*build_tasks, return_exceptions=True)
         for symbol, ctx in zip(valid_symbols, built, strict=True):
             if isinstance(ctx, Exception):
@@ -188,11 +195,14 @@ class HeadlessRunner:
             signal = self._compute_signal(pred, last_close)
             signals.append(signal)
 
-            if self._config.get("app", {}).get("mode") == "PAPER" or self._is_paper_mode():
+            if (
+                self._config.get("app", {}).get("mode") == "PAPER"
+                or self._is_paper_mode()
+            ):
                 await self._log_paper_trade(signal)
 
         emit_tasks = [self._signal_emitter.emit(sig) for sig in signals]
-        await asyncio.gather(*emit_tasks)
+        await asyncio.wait_for(asyncio.gather(*emit_tasks), timeout=5.0)
 
         elapsed_ms = (time.perf_counter() - cycle_start) * 1000
         logger.info("%d signals emitted in %.0fms", len(signals), elapsed_ms)
@@ -322,5 +332,6 @@ class HeadlessRunner:
                         actual_low=actual_low[:pred_len],
                     )
                 except Exception:
-                    logger.exception("Failed to resolve ledger id=%s for %s", row.get("id"), symbol)
-
+                    logger.exception(
+                        "Failed to resolve ledger id=%s for %s", row.get("id"), symbol
+                    )

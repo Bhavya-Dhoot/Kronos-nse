@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -17,7 +17,7 @@ def _sample_mvs_dict() -> dict:
         "composite": 0.35,
         "market_state": "bull_run",
         "vix_value": 14.2,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "dimensions": [
             {
                 "name": "vix",
@@ -25,7 +25,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.2,
                 "is_stale": False,
                 "detail": {},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "options",
@@ -33,7 +33,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.2,
                 "is_stale": False,
                 "detail": {"pcr": 1.2},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "fii_dii",
@@ -41,7 +41,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.175,
                 "is_stale": False,
                 "detail": {},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "oi",
@@ -49,7 +49,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.075,
                 "is_stale": True,
                 "detail": {},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "gift_nifty",
@@ -57,7 +57,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.15,
                 "is_stale": False,
                 "detail": {"gap_pct": 0.35},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "global_markets",
@@ -65,7 +65,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.15,
                 "is_stale": False,
                 "detail": {},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
             {
                 "name": "macro",
@@ -73,7 +73,7 @@ def _sample_mvs_dict() -> dict:
                 "weight": 0.05,
                 "is_stale": False,
                 "detail": {},
-                "collected_at": datetime.now(timezone.utc).isoformat(),
+                "collected_at": datetime.now(UTC).isoformat(),
             },
         ],
         "temperature_adjustment": 0.0,
@@ -86,15 +86,57 @@ def _sample_mvs_dict() -> dict:
 
 def _score_entries() -> dict:
     """Return mock _scores entries as present on MarketVarianceEngine."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     return {
-        "vix": {"score": -0.15, "weight": 0.2, "is_stale": False, "first_poll": True, "collected_at": now},
-        "options": {"score": 0.42, "weight": 0.2, "is_stale": False, "first_poll": True, "collected_at": now},
-        "fii_dii": {"score": 0.55, "weight": 0.175, "is_stale": False, "first_poll": True, "collected_at": now},
-        "oi": {"score": -0.22, "weight": 0.075, "is_stale": True, "first_poll": True, "collected_at": now},
-        "gift_nifty": {"score": 0.18, "weight": 0.15, "is_stale": False, "first_poll": True, "collected_at": now},
-        "global_markets": {"score": 0.30, "weight": 0.15, "is_stale": False, "first_poll": True, "collected_at": now},
-        "macro": {"score": -0.10, "weight": 0.05, "is_stale": False, "first_poll": True, "collected_at": now},
+        "vix": {
+            "score": -0.15,
+            "weight": 0.2,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "options": {
+            "score": 0.42,
+            "weight": 0.2,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "fii_dii": {
+            "score": 0.55,
+            "weight": 0.175,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "oi": {
+            "score": -0.22,
+            "weight": 0.075,
+            "is_stale": True,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "gift_nifty": {
+            "score": 0.18,
+            "weight": 0.15,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "global_markets": {
+            "score": 0.30,
+            "weight": 0.15,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
+        "macro": {
+            "score": -0.10,
+            "weight": 0.05,
+            "is_stale": False,
+            "first_poll": True,
+            "collected_at": now,
+        },
     }
 
 
@@ -108,7 +150,9 @@ def client() -> TestClient:
     mve.is_ready = True
     mve.is_degraded = False
     mve.last_mvs = _sample_mvs_dict()
-    mve._scores = _score_entries()  # dict, not PropertyMock — avoids MagicMock class pollution
+    mve._scores = (
+        _score_entries()
+    )  # dict, not PropertyMock — avoids MagicMock class pollution
     mve._collectors = {}  # avoid auto-MagicMock for .get() returning mock objects
     mve.active_dimensions = list(_score_entries().keys())
     mve.health_status = {
@@ -120,8 +164,7 @@ def client() -> TestClient:
 
     # ── Mock RedisCache ──────────────────────────────────────────────────
     mve_redis = MagicMock()
-    mve_redis._client = AsyncMock()
-    mve_redis._client.lrange = AsyncMock(return_value=[])
+    mve_redis.lrange = AsyncMock(return_value=[])
     mve_redis.pubsub = MagicMock()
     pubsub = AsyncMock()
     pubsub.subscribe = AsyncMock()
@@ -205,10 +248,9 @@ class TestVarianceHistory:
 
     def test_history_returns_entries_when_redis_has_data(self, client: TestClient):
         import json
+
         entry = _sample_mvs_dict()
-        client.app.state.mve_redis._client.lrange = AsyncMock(
-            return_value=[json.dumps(entry)]
-        )
+        client.app.state.mve_redis.lrange = AsyncMock(return_value=[json.dumps(entry)])
         resp = client.get("/api/v1/variance/history")
         assert resp.status_code == 200
         body = resp.json()
@@ -223,3 +265,61 @@ class TestVarianceHistory:
         body = resp.json()
         assert body["entries"] == []
         assert body["total"] == 0
+
+
+class TestVarianceWebSocket:
+    """WS /ws/variance
+
+    NOTE: These tests work around a Starlette/httpx limitation where
+    ``asyncio.create_task()`` inside a FastAPI WebSocket handler fails when
+    called through the sync httpx TestClient transport. The workaround:
+      - ``start_redis_listener`` is patched to a no-op (avoids ``create_task``)
+      - For the MVS update test, the message is injected via
+        ``ws_manager.broadcast()`` directly instead of relying on the Redis
+        pub/sub listener task.
+    """
+
+    def test_ws_connects_and_receives_ping(self, client: TestClient):
+        from unittest.mock import patch
+
+        from api.ws_manager import ws_manager
+
+        with patch.object(ws_manager, "start_redis_listener"):
+            with client.websocket_connect("/ws/variance") as ws:
+                msg = ws.receive_json()
+                assert msg["type"] == "ping"
+
+    def test_ws_receives_mvs_update_on_redis_message(self, client: TestClient):
+        from unittest.mock import patch
+
+        from api.ws_manager import ws_manager
+
+        entry = _sample_mvs_dict()
+
+        with patch.object(ws_manager, "start_redis_listener"):
+            with client.websocket_connect("/ws/variance") as ws:
+                # First message is the ping from ws_manager.connect()
+                ping = ws.receive_json()
+                assert ping["type"] == "ping"
+
+                # Inject the MVS update onto the TestClient's event loop
+                # via ws.portal.call (the underlying anyio portal).
+                ws.portal.call(
+                    ws_manager.broadcast,
+                    "variance:all",
+                    {"type": "mvs_update", "payload": entry},
+                )
+
+                # Second message should be the transformed MVS update
+                update = ws.receive_json()
+                assert update["type"] == "mvs_update"
+                assert "payload" in update
+                assert update["payload"]["composite"] == 0.35
+                assert update["payload"]["market_state"] == "bull_run"
+
+    def test_ws_errors_when_mve_not_available(self, client: TestClient):
+        client.app.state.mve_redis = None
+        with client.websocket_connect("/ws/variance") as ws:
+            msg = ws.receive_json()
+            assert msg["type"] == "error"
+            assert "MVE not available" in msg["detail"]

@@ -17,7 +17,7 @@ Dependencies
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from variance.engine import MarketVarianceEngine
@@ -39,9 +39,7 @@ class PredictionModifier:
         Defaults to None (all modifications disabled).
     """
 
-    def __init__(
-        self, mve: MarketVarianceEngine | None = None
-    ) -> None:
+    def __init__(self, mve: MarketVarianceEngine | None = None) -> None:
         self._mve = mve
 
     # ── pre-inference ────────────────────────────────────────────────────
@@ -129,12 +127,12 @@ class PredictionModifier:
         pred_close: list[float] | None = prediction.get("pred_close")
 
         if pred_close is not None and len(pred_close) > 0 and bias != 0.0:
-            N = len(pred_close)
-            denom = max(N - 1, 1)
+            nlen = len(pred_close)
+            denom = max(nlen - 1, 1)
             min_shift = float("inf")
             max_shift = float("-inf")
 
-            for i in range(N):
+            for i in range(nlen):
                 bias_scale = 1.0 - 0.5 * (i / denom)  # D-12 decay
                 shift_pct = bias * bias_scale * 0.01  # D-11 shift
                 pred_close[i] = round(pred_close[i] * (1.0 + shift_pct), 4)
@@ -154,8 +152,8 @@ class PredictionModifier:
         pred_low: list[float] | None = prediction.get("pred_low")
 
         if band_mult != 1.0 and pred_high is not None and pred_low is not None:
-            N = min(len(pred_high), len(pred_low))
-            for i in range(N):
+            nlen = min(len(pred_high), len(pred_low))
+            for i in range(nlen):
                 mid = (pred_high[i] + pred_low[i]) / 2.0  # D-15 midpoint
                 new_high = mid + (pred_high[i] - mid) * band_mult
                 new_low = mid - (mid - pred_low[i]) * band_mult
@@ -179,13 +177,10 @@ class PredictionModifier:
             bar_count = max(bar_count, len(pred_close))
 
         if bar_count > 0 and all(
-            lst is not None
-            for lst in [pred_open, pred_high, pred_low, pred_close]
+            lst is not None for lst in [pred_open, pred_high, pred_low, pred_close]
         ):
-            N = min(
-                len(pred_open), len(pred_high), len(pred_low), len(pred_close)
-            )
-            for i in range(N):
+            nlen = min(len(pred_open), len(pred_high), len(pred_low), len(pred_close))
+            for i in range(nlen):
                 hi = pred_high[i]
                 lo = pred_low[i]
                 op = pred_open[i]
@@ -217,9 +212,7 @@ class PredictionModifier:
                     n_bars_clipped += 1
 
         if n_bars_clipped > 0:
-            logger.debug(
-                "OHLCV constraints clipped %d bars", n_bars_clipped
-            )
+            logger.debug("OHLCV constraints clipped %d bars", n_bars_clipped)
 
         # ── Layer 4: Confidence Override (D-19 through D-21) ──────────────
         conf_override = mvs_dict.get("confidence_override")

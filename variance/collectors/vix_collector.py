@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.base_collector import BaseVarianceCollector
@@ -20,7 +20,7 @@ class VIXCollector(BaseVarianceCollector):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="vix", poll_interval=60)
+        super().__init__(name="vix", poll_interval=300)
 
     async def fetch(self) -> Any:
         """Fetch all NSE indices and locate INDIAVIX entry."""
@@ -40,12 +40,19 @@ class VIXCollector(BaseVarianceCollector):
             else:
                 for entry in raw:
                     if isinstance(entry, dict):
-                        for key in ("key", "index", "name", "symbol"):
-                            if entry.get(key) in ("INDIAVIX", "VIX", "India VIX"):
-                                v = entry.get("value") or entry.get("price") or entry.get("lastPrice")
-                                if v is not None:
-                                    vix_value = float(v)
-                                    break
+                        for key in ("key", "index", "name", "symbol", "indexSymbol"):
+                            if entry.get(key) in (
+                                "INDIAVIX",
+                                "INDIA VIX",
+                                "VIX",
+                                "India VIX",
+                                "India VIX",
+                            ):
+                                for val_key in ("last", "value", "price", "lastPrice"):
+                                    v = entry.get(val_key)
+                                    if v is not None:
+                                        vix_value = float(v)
+                                        break
                     if vix_value is not None:
                         break
 
@@ -59,7 +66,7 @@ class VIXCollector(BaseVarianceCollector):
             magnitude=abs(vix_value - 15) / 15,
             detail={"vix_raw": vix_value, "vix_baseline": 15},
             source="nse",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:

@@ -40,9 +40,7 @@ async def get_variance_score(request: Request) -> VarianceScoreResponse | Respon
     if last_mvs is None:
         return Response(status_code=204)
 
-    dims = [
-        DimensionScoreSchema(**d) for d in last_mvs.get("dimensions", [])
-    ]
+    dims = [DimensionScoreSchema(**d) for d in last_mvs.get("dimensions", [])]
 
     return VarianceScoreResponse(
         composite=last_mvs["composite"],
@@ -64,9 +62,7 @@ async def get_variance_score(request: Request) -> VarianceScoreResponse | Respon
     summary="Per-dimension variance detail",
     responses={404: {"description": "Dimension not found"}},
 )
-async def get_dimension_detail(
-    name: str, request: Request
-) -> DimensionDetailResponse:
+async def get_dimension_detail(name: str, request: Request) -> DimensionDetailResponse:
     """Return detailed score data for a single variance dimension.
 
     Valid dimension names: vix, options, fii_dii, oi, gift_nifty,
@@ -117,7 +113,7 @@ async def get_variance_history(
         return VarianceHistoryResponse(entries=[], total=0)
 
     try:
-        raw_entries = await mve_redis._client.lrange("mve:mvs:history", 0, -1)
+        raw_entries = await mve_redis.lrange("mve:mvs:history", 0, -1)
     except Exception:
         logger.warning("Failed to fetch MVS history from Redis", exc_info=True)
         return VarianceHistoryResponse(entries=[], total=0)
@@ -126,10 +122,7 @@ async def get_variance_history(
     for raw in raw_entries:
         try:
             mvs_dict = json.loads(raw)
-            dims = [
-                DimensionScoreSchema(**d)
-                for d in mvs_dict.get("dimensions", [])
-            ]
+            dims = [DimensionScoreSchema(**d) for d in mvs_dict.get("dimensions", [])]
             entries.append(
                 VarianceScoreResponse(
                     composite=mvs_dict["composite"],
@@ -137,13 +130,9 @@ async def get_variance_history(
                     vix_value=mvs_dict.get("vix_value"),
                     created_at=mvs_dict["created_at"],
                     dimensions=dims,
-                    temperature_adjustment=mvs_dict.get(
-                        "temperature_adjustment", 0.0
-                    ),
+                    temperature_adjustment=mvs_dict.get("temperature_adjustment", 0.0),
                     directional_bias=mvs_dict.get("directional_bias", 0.0),
-                    band_width_multiplier=mvs_dict.get(
-                        "band_width_multiplier", 1.0
-                    ),
+                    band_width_multiplier=mvs_dict.get("band_width_multiplier", 1.0),
                     signal_threshold=mvs_dict.get("signal_threshold", 0.005),
                     confidence_override=mvs_dict.get("confidence_override"),
                 )

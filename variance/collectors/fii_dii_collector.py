@@ -5,7 +5,8 @@ Combined score weights FII 70% and DII 30% to reflect institutional flow sentime
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.base_collector import BaseVarianceCollector
@@ -22,10 +23,21 @@ class FIIDIICollector(BaseVarianceCollector):
 
     def __init__(self) -> None:
         super().__init__(name="fii_dii", poll_interval=1800)
+        self._api_available: bool = True
 
     async def fetch(self) -> Any:
         """Fetch FII/DII net flow data via shared NseIndiaApi."""
-        return await _fetch_fii_dii_data()
+        try:
+            return await _fetch_fii_dii_data()
+        except NotImplementedError:
+            if self._api_available:
+                _logger = logging.getLogger(__name__)
+                _logger.warning(
+                    "FII/DII data not available from NSE API — returning neutral score. "
+                    "Install a supported version of the nse package or implement a custom fetcher."
+                )
+                self._api_available = False
+            return {}
 
     def parse(self, raw: Any) -> ParseResult:
         """Extract FII/DII net flows from response.
@@ -34,18 +46,47 @@ class FIIDIICollector(BaseVarianceCollector):
         - Simple dict: {"fii_net": ..., "dii_net": ...}
         - Nested dict: {"fii": {"net": ...}, "dii": {"net": ...}}
         - Fallback: scans for keys containing 'fii' and 'dii' with float values
+        - Empty dict: returns neutral score (NSE API unavailable)
         """
         if not isinstance(raw, dict):
             raise ValueError(
                 f"Expected dict for FII/DII data, got {type(raw).__name__}"
             )
 
+        # Empty dict = NSE API unavailable, return neutral
+        if not raw:
+            return ParseResult(
+                raw_value=0.0,
+                normalized=0.0,
+                direction=0,
+                magnitude=0.0,
+                detail={
+                    "fii_net": 0.0,
+                    "dii_net": 0.0,
+                    "combined_net": 0.0,
+                    "available": False,
+                },
+                source="nse",
+                as_of=datetime.now(UTC).isoformat(),
+            )
+
         fii_net = self._extract_net(raw, "fii")
         dii_net = self._extract_net(raw, "dii")
 
         if fii_net is None or dii_net is None:
-            raise ValueError(
-                "Could not extract FII and DII net values from response"
+            return ParseResult(
+                raw_value=0.0,
+                normalized=0.0,
+                direction=0,
+                magnitude=0.0,
+                detail={
+                    "fii_net": 0.0,
+                    "dii_net": 0.0,
+                    "combined_net": 0.0,
+                    "available": False,
+                },
+                source="nse",
+                as_of=datetime.now(UTC).isoformat(),
             )
 
         combined_net = fii_net * 0.7 + dii_net * 0.3
@@ -63,7 +104,7 @@ class FIIDIICollector(BaseVarianceCollector):
                 "combined_net": round(combined_net, 2),
             },
             source="nse",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:

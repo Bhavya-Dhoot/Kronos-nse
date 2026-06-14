@@ -22,7 +22,6 @@ def _drop_collected_at(detail: dict) -> dict:
 
 
 class TestInstitutionalDimensionAggregator:
-
     def test_combines_both_scores(self):
         """FII/DII 0.5 + OI 0.3 = (0.5*0.7 + 0.3*0.3) / 1.0 = 0.44"""
         agg = InstitutionalDimensionAggregator()
@@ -86,7 +85,9 @@ class TestInstitutionalDimensionAggregator:
     def test_detail_contains_all_keys(self):
         """Detail dict includes all expected fields."""
         agg = InstitutionalDimensionAggregator()
-        result = agg.compute(fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=True, oi_stale=False)
+        result = agg.compute(
+            fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=True, oi_stale=False
+        )
         detail = result["detail"]
         assert "fii_dii_score" in detail
         assert "oi_score" in detail
@@ -101,12 +102,16 @@ class TestInstitutionalDimensionAggregator:
     def test_stale_flags_passed_through(self):
         """Stale flags reflected in detail and is_stale."""
         agg = InstitutionalDimensionAggregator()
-        result = agg.compute(fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=True, oi_stale=False)
+        result = agg.compute(
+            fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=True, oi_stale=False
+        )
         assert result["is_stale"] is True
         assert result["detail"]["fii_dii_stale"] is True
         assert result["detail"]["oi_stale"] is False
 
-        result2 = agg.compute(fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=False, oi_stale=True)
+        result2 = agg.compute(
+            fii_dii_score=0.5, oi_score=0.3, fii_dii_stale=False, oi_stale=True
+        )
         assert result2["is_stale"] is True
 
     def test_collected_at_is_isoformat(self):
@@ -115,7 +120,9 @@ class TestInstitutionalDimensionAggregator:
         result = agg.compute(fii_dii_score=0.5, oi_score=0.3)
         assert "collected_at" in result
         assert "T" in result["collected_at"]
-        assert result["collected_at"].endswith("+00:00") or result["collected_at"].endswith("Z")
+        assert result["collected_at"].endswith("+00:00") or result[
+            "collected_at"
+        ].endswith("Z")
 
     def test_score_rounded_to_4_places(self):
         """Score rounded to 4 decimal places."""
@@ -133,13 +140,16 @@ class TestInstitutionalDimensionAggregator:
         assert result["score"] == 0.0
         assert result["is_stale"] is True
 
-    @pytest.mark.parametrize("fii_dii,oi,expected", [
-        (0.5, 0.5, 0.5),
-        (1.0, -0.5, 0.55),
-        (-0.3, 0.1, -0.18),
-        (0.0, 1.0, 0.3),
-        (-0.8, -0.2, -0.62),
-    ])
+    @pytest.mark.parametrize(
+        "fii_dii,oi,expected",
+        [
+            (0.5, 0.5, 0.5),
+            (1.0, -0.5, 0.55),
+            (-0.3, 0.1, -0.18),
+            (0.0, 1.0, 0.3),
+            (-0.8, -0.2, -0.62),
+        ],
+    )
     def test_parametrized_combinations(self, fii_dii, oi, expected):
         """Various combinations produce correct weighted averages."""
         agg = InstitutionalDimensionAggregator()

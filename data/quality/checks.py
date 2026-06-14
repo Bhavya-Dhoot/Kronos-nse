@@ -8,7 +8,7 @@ All timestamps are treated as Asia/Kolkata (IST).
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -84,7 +84,9 @@ def check_min_history(df: pd.DataFrame, mode: str) -> dict[str, Any]:
     }
 
 
-def check_coverage(df: pd.DataFrame, timeframe: str, mode: str = "HEADLESS") -> dict[str, Any]:
+def check_coverage(
+    df: pd.DataFrame, timeframe: str, mode: str = "HEADLESS"
+) -> dict[str, Any]:
     """Coverage across the trading session for observed trading days.
 
     Threshold is relaxed for TRAIN/COLLECT modes (85%) where multi-year
@@ -163,7 +165,9 @@ def check_no_critical_gaps(df: pd.DataFrame, timeframe: str) -> dict[str, Any]:
         if prev.date() != cur.date():
             continue
 
-        if not (is_market_open(prev.to_pydatetime()) and is_market_open(cur.to_pydatetime())):
+        if not (
+            is_market_open(prev.to_pydatetime()) and is_market_open(cur.to_pydatetime())
+        ):
             continue
 
         # Skip if there are non-trading days between (holiday/weekend) — though same date already handled.
@@ -212,24 +216,19 @@ def check_ohlcv_constraints(df: pd.DataFrame) -> dict[str, Any]:
 
     o = df["open"]
     h = df["high"]
-    l = df["low"]
+    lo = df["low"]
     c = df["close"]
     v = df["volume"]
 
-    mask = (
-        (h >= o)
-        & (h >= c)
-        & (l <= o)
-        & (l <= c)
-        & (h >= l)
-        & (v >= 0)
-    )
+    mask = (h >= o) & (h >= c) & (lo <= o) & (lo <= c) & (h >= lo) & (v >= 0)
     violations = df.index[~mask]
     passed = len(violations) == 0
     return {
         "passed": passed,
         "critical": True,
-        "detail": "OHLCV constraints valid." if passed else f"Found {len(violations)} OHLCV violation(s).",
+        "detail": "OHLCV constraints valid."
+        if passed
+        else f"Found {len(violations)} OHLCV violation(s).",
         "violation_count": int(len(violations)),
         "violation_indices": [ts.isoformat() for ts in violations[:50]],
     }
@@ -275,8 +274,15 @@ def check_outliers(df: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-def check_staleness(df: pd.DataFrame, threshold_seconds: int = 30) -> dict[str, Any]:
-    """Fail if the latest candle is older than threshold during market hours."""
+def check_staleness(
+    df: pd.DataFrame, threshold_seconds: int = 30, timeframe: str | None = None
+) -> dict[str, Any]:
+    """Fail if the latest candle is older than threshold during market hours.
+    When ``timeframe`` is provided, ``threshold_seconds`` is computed adaptively
+    as ``max(30, 2 * tf_minutes * 60)`` unless overridden explicitly."""
+    if timeframe is not None:
+        tf_min = _tf_minutes(timeframe)
+        threshold_seconds = max(30, 2 * tf_min * 60)
     df = _ensure_ist_index(df)
     now = pd.Timestamp.now(tz=IST)
 
@@ -286,8 +292,10 @@ def check_staleness(df: pd.DataFrame, threshold_seconds: int = 30) -> dict[str, 
 
     if outside_hours:
         detail = "Outside market hours; staleness check skipped."
+        data_stale = False
         if staleness is not None and staleness > 3600:
-            detail += f" Data from {last_ts.strftime('%a %H:%M')}, {staleness/3600:.0f}h ago."
+            detail += f" Data from {last_ts.strftime('%a %H:%M')}, {staleness / 3600:.0f}h ago."
+            data_stale = True
         return {
             "passed": True,
             "critical": True,
@@ -295,6 +303,7 @@ def check_staleness(df: pd.DataFrame, threshold_seconds: int = 30) -> dict[str, 
             "staleness_seconds": staleness,
             "last_candle_time": last_ts.isoformat() if last_ts is not None else None,
             "threshold_seconds": int(threshold_seconds),
+            "warning": data_stale or None,
         }
 
     if df.empty:
@@ -430,12 +439,16 @@ def check_mve_health(mve: Any | None) -> dict[str, Any]:
     # Total collectors count from health dict
     total_collectors = len(health.get("collectors", {}))
     active_count = health.get("active_dimensions", 0)
-    active_str = f"{active_count}/{total_collectors}" if total_collectors > 0 else str(active_count)
+    active_str = (
+        f"{active_count}/{total_collectors}"
+        if total_collectors > 0
+        else str(active_count)
+    )
 
     # Stale dimensions: check collected_at timestamps against current time
     # Uses 30s threshold matching DQG's max_staleness_seconds_live default
     threshold_seconds = 30
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     stale_dimensions: list[str] = []
 
     scores = getattr(mve, "_scores", {})
@@ -484,4 +497,3 @@ def check_mve_health(mve: Any | None) -> dict[str, Any]:
         "stale_dimensions": stale_dimensions,
         "circuit_broken_dimensions": circuit_broken_dimensions,
     }
-

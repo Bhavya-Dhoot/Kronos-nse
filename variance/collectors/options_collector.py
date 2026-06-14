@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.base_collector import BaseVarianceCollector
@@ -105,7 +105,7 @@ class OptionsCollector(BaseVarianceCollector):
             magnitude=abs(pcr - 1.0) * 0.5,
             detail=detail,
             source="nse",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:

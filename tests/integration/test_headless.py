@@ -54,8 +54,8 @@ def _make_runner(
 ) -> tuple[HeadlessRunner, AsyncMock]:
     import pandas as pd
 
-    IST = "Asia/Kolkata"
-    idx = pd.date_range("2025-04-01 09:15", periods=10, freq="5min", tz=IST)
+    ist_tz = "Asia/Kolkata"
+    idx = pd.date_range("2025-04-01 09:15", periods=10, freq="5min", tz=ist_tz)
     df = pd.DataFrame(
         {
             "open": [100.0] * 10,
@@ -124,7 +124,10 @@ def _make_runner(
 async def test_runner_skips_symbols_that_fail_dqg():
     runner, emitter = _make_runner(
         symbols=["SBIN", "RELIANCE"],
-        dqg_reports={"SBIN": _pass_report("SBIN"), "RELIANCE": _fail_report("RELIANCE")},
+        dqg_reports={
+            "SBIN": _pass_report("SBIN"),
+            "RELIANCE": _fail_report("RELIANCE"),
+        },
     )
     await runner._on_candle_close(["SBIN", "RELIANCE"], "5min")
     assert emitter.emit.await_count == 1
@@ -155,7 +158,12 @@ def _make_signal_runner() -> HeadlessRunner:
 
 def test_compute_signal_bullish_on_positive_move():
     runner = _make_signal_runner()
-    pred = {"symbol": "SBIN", "pred_close": [100.0, 102.0], "timeframe": "5min", "mode": "HEADLESS"}
+    pred = {
+        "symbol": "SBIN",
+        "pred_close": [100.0, 102.0],
+        "timeframe": "5min",
+        "mode": "HEADLESS",
+    }
     sig = runner._compute_signal(pred, 100.0)
     assert sig["direction"] == "BULLISH"
     assert sig["confidence"] in {"HIGH", "MEDIUM", "LOW"}
@@ -163,14 +171,24 @@ def test_compute_signal_bullish_on_positive_move():
 
 def test_compute_signal_bearish_on_negative_move():
     runner = _make_signal_runner()
-    pred = {"symbol": "SBIN", "pred_close": [100.0, 98.0], "timeframe": "5min", "mode": "HEADLESS"}
+    pred = {
+        "symbol": "SBIN",
+        "pred_close": [100.0, 98.0],
+        "timeframe": "5min",
+        "mode": "HEADLESS",
+    }
     sig = runner._compute_signal(pred, 100.0)
     assert sig["direction"] == "BEARISH"
 
 
 def test_compute_signal_neutral_on_small_move():
     runner = _make_signal_runner()
-    pred = {"symbol": "SBIN", "pred_close": [100.0, 100.2], "timeframe": "5min", "mode": "HEADLESS"}
+    pred = {
+        "symbol": "SBIN",
+        "pred_close": [100.0, 100.2],
+        "timeframe": "5min",
+        "mode": "HEADLESS",
+    }
     sig = runner._compute_signal(pred, 100.0)
     assert sig["direction"] == "NEUTRAL"
     assert sig["confidence"] == "LOW"

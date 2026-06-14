@@ -6,14 +6,14 @@ import asyncio
 import enum
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
 
 from data.quality.checks import (
-    check_coverage,
     check_corporate_action_suspected,
+    check_coverage,
     check_lookback_sufficient,
     check_min_history,
     check_mve_health,
@@ -27,7 +27,7 @@ from data.quality.checks import (
 logger = logging.getLogger(__name__)
 
 
-class DQGStatus(str, enum.Enum):
+class DQGStatus(enum.StrEnum):
     NOT_RUN = "NOT_RUN"
     COLLECTING = "COLLECTING"
     PARTIAL = "PARTIAL"
@@ -53,22 +53,29 @@ class DQGFailureError(Exception):
     """Raised when DQG blocks inference."""
 
     def __init__(self, report: DQGReport) -> None:
-        super().__init__(f"DQG blocked inference: {report.symbol} {report.timeframe} {report.status}")
+        super().__init__(
+            f"DQG blocked inference: {report.symbol} {report.timeframe} {report.status}"
+        )
         self.report = report
 
 
 class DataQualityGate:
     """Runs DQG checks and persists the report to Redis + DB."""
 
-    def __init__(self, config: dict[str, Any], db: Any, redis_cache: Any, mve: Any | None = None) -> None:
+    def __init__(
+        self, config: dict[str, Any], db: Any, redis_cache: Any, mve: Any | None = None
+    ) -> None:
         self._config = config
         self._db = db
         self._redis = redis_cache
         self._mve = mve
+        self._background_tasks: set[asyncio.Task] = set()
 
     async def run(self, symbol: str, timeframe: str, mode: str) -> DQGReport:
         mode_u = mode.upper()
-        dqg_cfg = (self._config.get("dqg") or {}) if isinstance(self._config, dict) else {}
+        dqg_cfg = (
+            (self._config.get("dqg") or {}) if isinstance(self._config, dict) else {}
+        )
 
         # 1. Fetch data (last 10000 candles — enough for DQG checks)
         df: pd.DataFrame = await self._db.get_candles(symbol, timeframe, limit=10000)
@@ -87,7 +94,9 @@ class DataQualityGate:
         checks["coverage"] = check_coverage(df, timeframe, mode_u)
         checks["no_critical_gaps"] = check_no_critical_gaps(df, timeframe)
         checks["ohlcv_valid"] = check_ohlcv_constraints(df)
-        checks["lookback_ok"] = check_lookback_sufficient(df, required=int(dqg_cfg.get("min_lookback_bars", 400)))
+        checks["lookback_ok"] = check_lookback_sufficient(
+            df, required=int(dqg_cfg.get("min_lookback_bars", 400))
+        )
 
         # warnings
         checks["outliers"] = check_outliers(df)
@@ -99,6 +108,7 @@ class DataQualityGate:
             checks["staleness"] = check_staleness(
                 df,
                 threshold_seconds=int(dqg_cfg.get("max_staleness_seconds_live", 30)),
+                timeframe=timeframe,
             )
 
         # MVE health check (warning-level, non-critical)
@@ -109,7 +119,9 @@ class DataQualityGate:
             status = DQGStatus.FAIL
         else:
             critical = {k: v for k, v in checks.items() if v.get("critical") is True}
-            passed_critical = [k for k, v in critical.items() if v.get("passed") is True]
+            passed_critical = [
+                k for k, v in critical.items() if v.get("passed") is True
+            ]
             if len(passed_critical) == len(critical):
                 status = DQGStatus.PASS
             elif len(passed_critical) > 0:
@@ -128,7 +140,7 @@ class DataQualityGate:
             timeframe=timeframe,
             mode=mode_u,
             status=status,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             last_candle_time=last_candle_time,
             coverage_pct=float(coverage_pct) if coverage_pct is not None else None,
             days_collected=int(days_collected),
@@ -141,7 +153,9 @@ class DataQualityGate:
         await self._redis.publish_dqg_status(symbol, asdict(report))
 
         # 5. Store report in DB (async, non-blocking)
-        asyncio.create_task(self._store_report_db(report))
+        task = asyncio.create_task(self._store_report_db(report))
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
         return report
 
@@ -177,16 +191,52 @@ class DataQualityGate:
         except Exception:
             logger.exception("Failed to store DQG report in DB")
 
-    async def run_batch(self, symbols: list[str], timeframe: str, mode: str) -> dict[str, DQGReport]:
+    async def run_batch(
+        self, symbols: list[str], timeframe: str, mode: str
+    ) -> dict[str, DQGReport]:
         sem = asyncio.Semaphore(10)
+
         async def _run(s: str) -> DQGReport:
             async with sem:
                 return await self.run(s, timeframe, mode)
+
         results = await asyncio.gather(*(_run(s) for s in symbols))
+
+        # Batch write DQG reports to Redis using pipeline (faster than individual SETEX)
+        try:
+            pipe = self._redis._client.pipeline()
+            for r in results:
+                key = f"dqg:{r.symbol}:{r.timeframe}"
+                import json
+
+                pipe.setex(
+                    key,
+                    60,
+                    json.dumps(
+                        {
+                            "symbol": r.symbol,
+                            "timeframe": r.timeframe,
+                            "mode": r.mode,
+                            "status": r.status.value,
+                            "created_at": r.created_at.isoformat(),
+                            "last_candle_time": r.last_candle_time,
+                            "coverage_pct": r.coverage_pct,
+                            "days_collected": r.days_collected,
+                            "checks": r.checks,
+                            "recommendation": r.recommendation,
+                        }
+                    ),
+                )
+            await pipe.execute()
+        except Exception:
+            logger.warning(
+                "Redis pipeline write for DQG batch failed, falling back to individual writes"
+            )
+            # Fallback handled by individual run() calls
+
         return {r.symbol: r for r in results}
 
     async def assert_pass(self, symbol: str, timeframe: str, mode: str) -> None:
         report = await self.run(symbol, timeframe, mode)
         if report.status != DQGStatus.PASS:
             raise DQGFailureError(report)
-

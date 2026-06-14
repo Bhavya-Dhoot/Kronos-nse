@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import yaml
@@ -52,8 +52,12 @@ class GIFTNiftyCollector(BaseVarianceCollector):
         Raises ValueError if both sources fail.
         """
         browser = await _get_browser()
-        primary = self._gift_config.get("primary_url", "https://groww.in/markets/gift-nifty")
-        fallback = self._gift_config.get("fallback_url", "https://niftytrader.in/gift-nifty")
+        primary = self._gift_config.get(
+            "primary_url", "https://groww.in/markets/gift-nifty"
+        )
+        fallback = self._gift_config.get(
+            "fallback_url", "https://niftytrader.in/gift-nifty"
+        )
 
         for url, source_name in [(primary, "groww"), (fallback, "niftytrader")]:
             page = await browser.new_page()
@@ -66,8 +70,15 @@ class GIFTNiftyCollector(BaseVarianceCollector):
                     continue
 
                 numbers = re.findall(r"[\d,]+\.?\d*", text)
-                parsed = [float(n.replace(",", "")) for n in numbers if n.replace(",", "").replace(".", "").isdigit()
-                          or (n.count(".") == 1 and n.replace(",", "").replace(".", "").isdigit())]
+                parsed = [
+                    float(n.replace(",", ""))
+                    for n in numbers
+                    if n.replace(",", "").replace(".", "").isdigit()
+                    or (
+                        n.count(".") == 1
+                        and n.replace(",", "").replace(".", "").isdigit()
+                    )
+                ]
                 valid = [v for v in parsed if 15000 < v < 40000]
                 if valid:
                     return {"value": valid[0], "source": source_name, "url": url}
@@ -108,7 +119,7 @@ class GIFTNiftyCollector(BaseVarianceCollector):
                 "source": raw.get("source", "unknown"),
             },
             source=raw.get("source", "unknown"),
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:
@@ -120,4 +131,4 @@ class GIFTNiftyCollector(BaseVarianceCollector):
         gap_pct = parsed.get("detail", {}).get("gap_pct")
         if gap_pct is None:
             return 0.0
-        return max(-1.0, min(1.0, gap_pct * 50))
+        return max(-1.0, min(1.0, gap_pct * 0.5))

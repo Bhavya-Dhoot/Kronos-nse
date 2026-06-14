@@ -1,8 +1,9 @@
 """OICollector — polls Nifty/BankNifty futures OI every 300s via AngelOneClient."""
+
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from variance.base_collector import BaseVarianceCollector
@@ -77,7 +78,7 @@ class OICollector(BaseVarianceCollector):
                 "tracked_count": len(TRACKED_SYMBOLS),
             },
             source="angel",
-            as_of=datetime.now(timezone.utc).isoformat(),
+            as_of=datetime.now(UTC).isoformat(),
         )
 
     def score(self, parsed: ParseResult) -> float:
@@ -111,26 +112,22 @@ class OICollector(BaseVarianceCollector):
             if previous is not None and "total_oi" in previous:
                 prev_oi = self._to_float(previous["total_oi"], 0.0)
                 if prev_oi > 0:
-                    oi_change_pct = round(
-                        (total_oi - prev_oi) / prev_oi * 100, 2
-                    )
+                    oi_change_pct = round((total_oi - prev_oi) / prev_oi * 100, 2)
                 for symbol in TRACKED_SYMBOLS:
                     sym_key = f"{OI_BASELINE_KEY_PREFIX}:{symbol}"
                     sym_data = parsed["detail"]["symbols"].get(symbol, {})
                     if sym_data.get("has_data"):
                         prev_sym = await redis_cache.get_mve(sym_key)
                         if prev_sym is not None and "open_interest" in prev_sym:
-                            prev_oi_val = self._to_float(
-                                prev_sym["open_interest"], 0.0
-                            )
+                            prev_oi_val = self._to_float(prev_sym["open_interest"], 0.0)
                             if prev_oi_val > 0:
-                                parsed["detail"]["symbols"][symbol][
-                                    "oi_change_pct"
-                                ] = round(
-                                    (sym_data["open_interest"] - prev_oi_val)
-                                    / prev_oi_val
-                                    * 100,
-                                    2,
+                                parsed["detail"]["symbols"][symbol]["oi_change_pct"] = (
+                                    round(
+                                        (sym_data["open_interest"] - prev_oi_val)
+                                        / prev_oi_val
+                                        * 100,
+                                        2,
+                                    )
                                 )
 
             await redis_cache.set_mve(
@@ -156,7 +153,7 @@ class OICollector(BaseVarianceCollector):
         parsed["direction"] = 1 if score_val > 0 else (-1 if score_val < 0 else 0)
         parsed["magnitude"] = abs(score_val)
         self._last_successful_result = parsed
-        self._last_poll_time = datetime.now(timezone.utc)
+        self._last_poll_time = datetime.now(UTC)
         self._consecutive_errors = 0
         return parsed
 

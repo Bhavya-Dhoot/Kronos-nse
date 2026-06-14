@@ -33,14 +33,18 @@ async def _prediction_transform(
 ) -> dict | None:
     """Recompute prediction when a candle closes."""
     try:
-        report = await ctx.dqg.run(symbol, payload.get("timeframe", "5min"), dqg_mode("STANDARD"))
+        report = await ctx.dqg.run(
+            symbol, payload.get("timeframe", "5min"), dqg_mode("STANDARD")
+        )
         if report.status != DQGStatus.PASS:
             return {
                 "type": "dqg_blocked",
                 "symbol": symbol,
                 "report": dqg_report_to_response(report).model_dump(),
             }
-        built = await ctx.context_builder.build(symbol, payload.get("timeframe", "5min"), "STANDARD")
+        built = await ctx.context_builder.build(
+            symbol, payload.get("timeframe", "5min"), "STANDARD"
+        )
         last_close = float(payload.get("close") or built["df"]["close"].iloc[-1])
         raw = await ctx.engine.predict(
             symbol=symbol,
@@ -163,7 +167,9 @@ async def ws_signals(websocket: WebSocket) -> None:
 
     async def _forward() -> None:
         while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=1.0
+            )
             if not message or message.get("type") != "pmessage":
                 continue
             try:
