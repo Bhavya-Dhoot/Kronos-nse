@@ -1,0 +1,16 @@
+extends: "base.yaml"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "INFO"
+
+database:
+  url: "${DATABASE_URL}"
+
+redis:
+  url: "${REDIS_URL}"
+
+training:
+  max_epochs: 10
+

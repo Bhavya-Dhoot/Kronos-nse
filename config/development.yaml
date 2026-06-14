@@ -1,0 +1,14 @@
+extends: "base.yaml"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "DEBUG"
+
+database:
+  url: "postgresql://postgres:kronos@localhost:5432/kronos_nse"
+  test_url: "postgresql://postgres:kronos@localhost:5433/kronos_nse_test"
+
+redis:
+  url: "redis://localhost:6379"
+
